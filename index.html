@@ -20,9 +20,11 @@
             overflow: hidden; 
             height: 100vh; 
             touch-action: none;
-            /* Mavi seçmeyi engelleme */
+            /* Mavi seçmeyi tamamen engelleme */
             user-select: none;
             -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .glass { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -42,23 +44,23 @@
             position: absolute; width: 32px; height: 32px; background: #9b1c31; 
             border: 2px solid white; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; font-size: 12px; color: white;
+            font-weight: bold; font-size: 11px; color: white;
             box-shadow: 0 0 15px rgba(155, 28, 49, 0.6); 
             transform: translate(-50%, -50%); z-index: 10;
             transition: transform 0.2s;
+            cursor: pointer;
         }
         .map-point:active { transform: translate(-50%, -50%) scale(0.9); }
         .map-point.start { background: #2563eb; box-shadow: 0 0 15px rgba(37, 99, 235, 0.6); }
 
-        /* Modal Animasyon */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px); z-index: 200;
-            display: none; align-items: center; justify-content: center; p-6;
+            display: none; align-items: center; justify-content: center; padding: 1.5rem;
         }
         .modal-overlay.active { display: flex; }
 
-        #reader { width: 100% !important; border-radius: 1rem; overflow: hidden; }
+        #reader { width: 100% !important; border-radius: 1rem; overflow: hidden; border: none !important; }
         
         .st-view-iframe {
             width: 100%; height: 300px; border-radius: 1rem; border: none;
@@ -136,7 +138,7 @@
                 <i data-lucide="map-pin" class="w-8 h-8"></i>
             </div>
             <div>
-                <h3 id="modalPointName" class="text-lg font-black uppercase text-white mb-2">---</h3>
+                <h3 id="modalPointName" class="text-sm font-black uppercase text-white mb-2 leading-tight">---</h3>
                 <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Lütfen bir işlem seçin</p>
             </div>
             <div class="space-y-3">
@@ -176,18 +178,18 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let team = null, timerInt = null, html5QrCode = null;
-        let sc = 1, minSc = 0.1, tx = 0, ty = 0, isD = false, sx, sy;
+        let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy;
         let selectedPoint = null;
 
         const points = [
-            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Hoş geldiniz! Yarışma burada başlıyor. Koordinatları takip edin!", loc: "Eğitim+Fakültesi+Isparta" },
-            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Olimpik Yüzme Havuzu", task: "Havuzun derinliklerinde değil, sorunun mantığında gizli her şey. Sorun: Havuz kapasitesi X ise...", loc: "SDÜ+29+Ekim+Yüzme+Havuzu" },
-            { id: 2, x: 590, y: 210, name: "ISUBÜ Orman Fakültesi", task: "Ağaçların arasından fısıldayan bir formül var. Çözümü bul ve ilerle!", loc: "SDÜ+Orman+Fakültesi" },
+            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Hoş geldiniz! Yarışma burada başlıyor. Koordinatları takip edin!", loc: "SDÜ+Eğitim+Fakültesi" },
+            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Olimpik Yüzme Havuzu", task: "Havuzun derinliklerinde değil, sorunun mantığında gizli her şey.", loc: "SDÜ+29+Ekim+Yüzme+Havuzu" },
+            { id: 2, x: 590, y: 210, name: "ISUBÜ Orman Fakültesi", task: "Ağaçların arasından fısıldayan bir matematik problemi var.", loc: "ISUBÜ+Orman+Fakültesi" },
             { id: 3, x: 200, y: 520, name: "SDÜ Bilgi Merkezi", task: "Bilginin kalbindesin. Sessizce soruyu oku ve cevabı şifrele.", loc: "SDÜ+Kütüphane" },
             { id: 4, x: 410, y: 450, name: "SDÜ Academi Yaşam Merkezi", task: "Yaşamın hızıyla matematiğin hızını birleştir.", loc: "SDÜ+Yaşam+Merkezi" },
             { id: 5, x: 490, y: 530, name: "Doğu Yerleşkesi Merkez Durağı", task: "Duraktaki bekleyen her saniye bir denklemdir.", loc: "SDÜ+Merkez+Durak" },
-            { id: 6, x: 375, y: 285, name: "SDÜ Spor Bilimleri Fakültesi", task: "Hızlı olan değil, doğru hesaplayan kazanır.", loc: "SDÜ+Spor+Bilimleri" },
-            { id: 7, x: 740, y: 370, name: "SDÜ İlahiyat Fakültesi Durakları", task: "Sabır ve zeka seni bir sonraki hedefe taşıyacak.", loc: "SDÜ+İlahiyat" },
+            { id: 6, x: 375, y: 285, name: "SDÜ Spor Bilimleri Fakültesi", task: "Hızlı olan değil, doğru hesaplayan kazanır.", loc: "SDÜ+Spor+Bilimleri+Fakültesi" },
+            { id: 7, x: 740, y: 370, name: "SDÜ İlahiyat Fakültesi Durakları", task: "Sabır ve zeka seni bir sonraki hedefe taşıyacak.", loc: "SDÜ+İlahiyat+Fakültesi" },
             { id: 8, x: 675, y: 540, name: "SDÜ Hastanesi Yaşam Cafe", task: "Bir kahve molası tadında bir problem seni bekliyor.", loc: "SDÜ+Hastanesi+Yaşam+Cafe" },
             { id: 9, x: 440, y: 690, name: "SDÜ İİBF", task: "Ekonomik dengeler ve matematiksel gerçekler...", loc: "SDÜ+İİBF" },
             { id: 10, x: 170, y: 650, name: "SDÜ Kulüp Odaları", task: "Sosyal zekanı analitik zekanla harmanla.", loc: "SDÜ+Kulüp+Odaları" }
@@ -225,7 +227,7 @@
                     team = p.new;
                     sync();
                 }).subscribe();
-            } else alert('Kod hatalı!');
+            } else alert('Takım kodu hatalı!');
         }
 
         function sync() {
@@ -243,6 +245,84 @@
             }
         }
 
+        // --- HARİTA MOTORU VE KISITLAMALAR ---
+        const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
+        mi.onload = resetM;
+
+        function upd() {
+            const vw = vp.clientWidth;
+            const vh = vp.clientHeight;
+            const mw = mi.naturalWidth * sc;
+            const mh = mi.naturalHeight * sc;
+
+            // X EKSENİ KISITLAMASI VE ORTALAMA
+            if (mw <= vw) {
+                tx = (vw - mw) / 2; // Sığmıyorsa veya tam sığıyorsa ortala
+            } else {
+                if (tx > 0) tx = 0;
+                if (tx < vw - mw) tx = vw - mw;
+            }
+
+            // Y EKSENİ KISITLAMASI VE ORTALAMA
+            if (mh <= vh) {
+                ty = (vh - mh) / 2; // Sığmıyorsa veya tam sığıyorsa ortala
+            } else {
+                if (ty > 0) ty = 0;
+                if (ty < vh - mh) ty = vh - mh;
+            }
+
+            cv.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`;
+        }
+
+        function zoom(f) { 
+            const prevSc = sc;
+            sc = Math.max(minSc, Math.min(6, sc * f)); 
+            
+            // Zoom yaparken merkeze göre ayarla
+            if (sc !== prevSc) {
+                upd();
+            }
+        }
+
+        function resetM() { 
+            if(!mi.naturalWidth) return;
+            // Haritayı ekrana sığdıracak minimum ölçeği bul
+            minSc = Math.min(vp.clientWidth / mi.naturalWidth, vp.clientHeight / mi.naturalHeight);
+            sc = minSc;
+            upd(); 
+        }
+
+        function setMap(b) { 
+            document.getElementById('mapLayer').classList.toggle('open', b); 
+            if(b) setTimeout(resetM, 100); 
+        }
+
+        vp.onpointerdown = e => { 
+            if (sc <= minSc) return; // Küçük boyutta sürükleme kapalı
+            isD = true; 
+            sx = e.clientX - tx; 
+            sy = e.clientY - ty; 
+            vp.setPointerCapture(e.pointerId);
+        };
+
+        window.onpointermove = e => { 
+            if(isD) { 
+                tx = e.clientX - sx; 
+                ty = e.clientY - sy; 
+                upd(); 
+            } 
+        };
+
+        window.onpointerup = e => { 
+            isD = false; 
+            vp.releasePointerCapture(e.pointerId);
+        };
+
+        vp.onwheel = e => { 
+            e.preventDefault(); 
+            zoom(e.deltaY > 0 ? 0.8 : 1.25); 
+        }, { passive: false };
+
         // --- MODAL YÖNETİMİ ---
         function openPointModal(p) {
             selectedPoint = p;
@@ -257,10 +337,12 @@
             closeModals();
             const body = document.getElementById('contentBody');
             body.innerHTML = `
-                <h3 class="font-black uppercase text-white">${p.name}</h3>
-                <p class="text-[10px] text-slate-500 uppercase tracking-widest">Sokak Görünümü (Temsili)</p>
-                <iframe class="st-view-iframe" src="https://www.google.com/maps/embed/v1/search?key=&q=${p.loc}&zoom=18"></iframe>
-                <p class="text-[9px] italic text-slate-400">Not: Gerçek cihazlarda Google Haritalar uygulamasını açmanız önerilir.</p>
+                <h3 class="font-black uppercase text-white leading-tight">${p.name}</h3>
+                <p class="text-[10px] text-red-500 font-bold uppercase tracking-widest">Sokak Görünümü</p>
+                <div class="overflow-hidden rounded-2xl">
+                    <iframe class="st-view-iframe" src="https://www.google.com/maps/embed/v1/search?key=&q=${p.loc}&zoom=18"></iframe>
+                </div>
+                <p class="text-[9px] italic text-slate-500">Hedef bölgenin kuşbakışı görünümü yukarıdadır.</p>
             `;
             document.getElementById('contentModal').classList.add('active');
         }
@@ -274,11 +356,10 @@
                 { facingMode: "environment" }, 
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
-                    // QR Okunduğunda
                     closeScanner();
                     showTask(p);
                 },
-                (errorMessage) => { /* hata loglamaya gerek yok */ }
+                (errorMessage) => { }
             );
         }
 
@@ -286,7 +367,7 @@
             const body = document.getElementById('contentBody');
             body.innerHTML = `
                 <div class="p-6 bg-red-600/10 rounded-3xl border border-red-600/20">
-                    <h3 class="font-black uppercase text-red-500 text-xl mb-4">${p.name} - GÖREV</h3>
+                    <h3 class="font-black uppercase text-red-500 text-lg mb-4 leading-tight">${p.name} - GÖREV</h3>
                     <p class="text-white text-sm leading-relaxed font-medium">${p.task}</p>
                     <div class="mt-8 p-4 glass rounded-2xl text-[10px] font-bold uppercase tracking-widest text-slate-500">
                         Cevabı bulup hakeme onaylatın veya sisteme girin.
@@ -300,6 +381,8 @@
             if(html5QrCode) {
                 html5QrCode.stop().then(() => {
                     document.getElementById('qrModal').classList.remove('active');
+                }).catch(() => {
+                    document.getElementById('qrModal').classList.remove('active');
                 });
             } else {
                 document.getElementById('qrModal').classList.remove('active');
@@ -310,22 +393,6 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
             selectedPoint = null;
         }
-
-        // --- HARİTA MOTORU ---
-        const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
-        mi.onload = resetM;
-        function setMap(b) { document.getElementById('mapLayer').classList.toggle('open', b); if(b) setTimeout(resetM, 100); }
-        function upd() { cv.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`; }
-        function zoom(f) { sc = Math.max(minSc, Math.min(6, sc * f)); upd(); }
-        function resetM() { 
-            if(!mi.naturalWidth) return;
-            minSc = Math.min(vp.clientWidth / mi.naturalWidth, vp.clientHeight / mi.naturalHeight);
-            sc = minSc; tx = (vp.clientWidth - mi.naturalWidth * sc) / 2; ty = (vp.clientHeight - mi.naturalHeight * sc) / 2;
-            upd(); 
-        }
-        vp.onpointerdown = e => { isD = true; sx = e.clientX-tx; sy = e.clientY-ty; };
-        window.onpointermove = e => { if(isD) { tx = e.clientX-sx; ty = e.clientY-sy; upd(); } };
-        window.onpointerup = () => isD = false;
 
         initPoints();
         lucide.createIcons();
