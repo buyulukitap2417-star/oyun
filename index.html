@@ -8,7 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://meet.jit.si/external_api.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -18,15 +18,16 @@
         #mapLayer.open { transform: translateY(0); }
         #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; cursor: grab; }
         #canvas { position: absolute; transform-origin: 0 0; will-change: transform; pointer-events: auto; }
-        .map-point { position: absolute; width: 36px; height: 36px; background: #9b1c31; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; transform: translate(-50%, -50%); z-index: 50; cursor: pointer; pointer-events: auto; box-shadow: 0 0 20px rgba(155, 28, 49, 0.6); }
-        .map-point.start { background: #2563eb; }
-        
+        .map-point { 
+            position: absolute; width: 36px; height: 36px; background: #9b1c31; border: 2px solid white; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; 
+            transform: translate(-50%, -50%); z-index: 50; cursor: pointer; pointer-events: auto; box-shadow: 0 0 20px rgba(155, 28, 49, 0.6); 
+        }
+        .map-point.start { background: #2563eb; box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); }
         .control-btn { transition: all 0.3s; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 4px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .btn-active { background: #ef4444 !important; border-color: #ef4444 !important; animation: pulse-btn 1.5s infinite; }
         .btn-muted { background: #1e293b; }
         @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        
-        #jitsi-audio { position: fixed; left: -9999px; width: 1px; height: 1px; visibility: hidden; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
         .st-view-iframe { width: 100%; height: 300px; border-radius: 1rem; border: none; }
@@ -34,8 +35,7 @@
 </head>
 <body class="flex flex-col items-center justify-center">
 
-    <div id="jitsi-audio"></div>
-
+    <!-- GİRİŞ -->
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
         <div class="max-w-md w-full glass p-8 rounded-[2.5rem] border-t-4 border-red-700 shadow-2xl">
             <img src="https://r.resimlink.com/p5fEz.png" class="w-20 mx-auto mb-6">
@@ -45,9 +45,10 @@
         </div>
     </div>
 
+    <!-- PANEL -->
     <div id="dashUI" class="hidden w-full h-full flex flex-col p-4 space-y-4">
         <div class="flex justify-between gap-4 text-white">
-            <div class="flex-1 glass rounded-2xl p-4"><h2 id="teamN" class="text-xs font-black uppercase truncate">---</h2><p class="text-[9px] font-bold text-slate-500 uppercase">Sinyal Aktif</p></div>
+            <div class="flex-1 glass rounded-2xl p-4"><h2 id="teamN" class="text-xs font-black uppercase truncate text-left">---</h2><p class="text-[9px] font-bold text-emerald-500 uppercase">SİNYAL AKTİF</p></div>
             <div class="flex-1 glass rounded-2xl p-4 text-center border-b-2 border-red-700"><div id="clock" class="text-2xl font-black digital">00:00:00</div><p class="text-[9px] text-red-500 font-bold uppercase tracking-widest">SÜRE</p></div>
         </div>
         <div class="flex-1 glass rounded-[2.5rem] flex flex-col items-center justify-center text-center p-8">
@@ -56,20 +57,25 @@
         </div>
     </div>
 
+    <!-- SES KONTROLLERİ -->
     <div id="voiceUI" class="hidden fixed bottom-6 right-6 z-[150] flex flex-col gap-3">
         <button id="spkBtn" onclick="toggleSpk()" class="control-btn btn-muted"><i data-lucide="volume-x" id="spkIcon" class="text-white w-6 h-6"></i></button>
         <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted"><i data-lucide="mic-off" id="micIcon" class="text-white w-6 h-6"></i></button>
     </div>
 
+    <!-- HARİTA -->
     <div id="mapLayer">
         <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/50 backdrop-blur-md text-white">
-            <div><h2 class="font-black text-xs uppercase tracking-widest">SAHA HARİTASI</h2><p class="text-[9px] text-red-500 font-bold uppercase">Görevler İçin Noktalara Tıklayın</p></div>
+            <div><h2 class="font-black text-xs uppercase tracking-widest">SAHA HARİTASI</h2><p class="text-[9px] text-red-500 font-bold uppercase">Noktalara Tıklayarak Görevleri Görün</p></div>
             <button onclick="setMap(false)" class="p-3 bg-white/5 rounded-xl transition-all"><i data-lucide="chevron-down"></i></button>
         </div>
         <div id="vp"><div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none"><div id="pts" class="pointer-events-auto"></div></div></div>
         <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[110] text-white"><button onclick="zoom(1.4)" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="zoom-in"></i></button><button onclick="resetM()" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="maximize-2"></i></button><button onclick="zoom(0.7)" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="zoom-out"></i></button></div>
     </div>
 
+    <audio id="remoteAudio" autoplay class="hidden"></audio>
+
+    <!-- MODALLAR -->
     <div id="pointModal" class="modal-overlay text-white">
         <div class="glass w-full max-w-sm p-8 rounded-[2.5rem] text-center space-y-6">
             <h3 id="modalPointName" class="text-sm font-black uppercase leading-tight">---</h3>
@@ -80,7 +86,7 @@
             </div>
         </div>
     </div>
-    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[2rem] text-center text-white"><h3 class="text-xs font-black mb-4 uppercase">QR OKUTUN</h3><div id="reader"></div><button onclick="closeScanner()" class="mt-4 text-xs font-bold text-red-500 uppercase">VAZGEÇ</button></div></div>
+    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[2rem] text-center"><h3 class="text-xs font-black mb-4 uppercase text-white">QR OKUTUN</h3><div id="reader"></div><button onclick="closeScanner()" class="mt-4 text-xs font-bold text-red-500 uppercase">VAZGEÇ</button></div></div>
     <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-6 rounded-[2rem] text-center relative text-white"><button onclick="closeModals()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-4"></div></div></div>
 
     <script>
@@ -88,21 +94,21 @@
         const SUPABASE_KEY = 'sb_publishable_2lmWYp5Pkvn_BsADVHPKug_KK9n8v2-';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let team = null, timerInt = null, jitsiApi = null, isMicOn = false, isSpkOn = false;
+        let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy;
 
         const points = [
-            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Hoş geldiniz! Yarışma burada başlıyor.", loc: "SDÜ+Eğitim+Fakültesi" },
-            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Havuz", task: "Yüzme havuzu görevi!", loc: "SDÜ+Havuz" },
-            { id: 2, x: 590, y: 210, name: "Orman Fakültesi", task: "Orman fakültesi görevi!", loc: "SDÜ+Orman+Fakültesi" },
-            { id: 3, x: 200, y: 520, name: "Bilgi Merkezi", task: "Kütüphane görevi!", loc: "SDÜ+Kütüphane" },
-            { id: 4, x: 410, y: 450, name: "Academi Yaşam", task: "Yaşam merkezi görevi!", loc: "SDÜ+Yaşam+Merkezi" },
-            { id: 5, x: 490, y: 530, name: "Merkez Durak", task: "Durak görevi!", loc: "SDÜ+Merkez+Durak" },
-            { id: 6, x: 375, y: 285, name: "Spor Bilimleri", task: "Spor bilimleri görevi!", loc: "SDÜ+Spor+Bilimleri" },
-            { id: 7, x: 740, y: 370, name: "İlahiyat Durakları", task: "İlahiyat görevi!", loc: "SDÜ+İlahiyat" },
-            { id: 8, x: 675, y: 540, name: "Yaşam Cafe", task: "Cafe görevi!", loc: "SDÜ+Yaşam+Cafe" },
-            { id: 9, x: 440, y: 690, name: "SDÜ İİBF", task: "İİBF görevi!", loc: "SDÜ+İİBF" },
-            { id: 10, x: 170, y: 650, name: "Kulüp Odaları", task: "Kulüpler görevi!", loc: "SDÜ+Kulüp+Odaları" }
+            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Yarışma Başladı! İlk koordinatı bulun.", loc: "SDÜ+Eğitim+Fakültesi" },
+            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Olimpik Havuz", task: "Havuz kapasitesi üzerinden bir problem...", loc: "SDÜ+Havuz" },
+            { id: 2, x: 590, y: 210, name: "ISUBÜ Orman Fakültesi", task: "Ağaçların yaşı ile ilgili formülü çözün.", loc: "Orman+Fakültesi" },
+            { id: 3, x: 200, y: 520, name: "SDÜ Bilgi Merkezi", task: "Kütüphane koridorlarında bir şifre saklı.", loc: "SDÜ+Kütüphane" },
+            { id: 4, x: 410, y: 450, name: "SDÜ Academi Yaşam Merkezi", task: "Alışveriş fişindeki gizli rakamı bulun.", loc: "SDÜ+Academi" },
+            { id: 5, x: 490, y: 530, name: "Doğu Yerleşkesi Merkez Durağı", task: "Otobüs sefer saatlerini hesaplayın.", loc: "SDÜ+Durağı" },
+            { id: 6, x: 375, y: 285, name: "SDÜ Spor Bilimleri Fakültesi", task: "Koşu parkurundaki mesafeyi oranlayın.", loc: "SDÜ+Spor+Bilimleri" },
+            { id: 7, x: 740, y: 370, name: "SDÜ İlahiyat Fakültesi Durakları", task: "Durak levhasındaki rakamı toplayın.", loc: "SDÜ+İlahiyat" },
+            { id: 8, x: 675, y: 540, name: "SDÜ Hastanesi Yaşam Cafe", task: "Kahve fiyatlarındaki artışı hesaplayın.", loc: "SDÜ+Yaşam+Cafe" },
+            { id: 9, x: 440, y: 690, name: "SDÜ İİBF", task: "İktisadi bir denklemi deşifre edin.", loc: "SDÜ+İİBF" },
+            { id: 10, x: 170, y: 650, name: "SDÜ Kulüp Odaları", task: "Öğrenci kulübü sayısını çarpın.", loc: "SDÜ+Kulüp+Odaları" }
         ];
 
         async function login() {
@@ -115,33 +121,55 @@
                 document.getElementById('loginUI').classList.add('hidden');
                 document.getElementById('dashUI').classList.remove('hidden');
                 document.getElementById('voiceUI').classList.remove('hidden');
-                initPoints(); sync(); initJitsi('SDU_ORY_GLOBAL_2026_SECURE');
+                initPoints(); sync(); startVoiceChannel();
                 supabaseClient.channel('team_chan').on('postgres_changes', { event:'UPDATE', schema:'public', table:'registrations', filter:`id=eq.${team.id}` }, (p) => { team = p.new; sync(); }).subscribe();
             } else alert("Takım Kodu Hatalı!");
         }
 
-        function initJitsi(room) {
-            if(jitsiApi) jitsiApi.dispose();
-            jitsiApi = new JitsiMeetExternalAPI("meet.jit.si", {
-                roomName: room, width: 1, height: 1, parentNode: document.querySelector('#jitsi-audio'),
-                configOverwrite: { startWithAudioMuted: true, videoConstraints: { video: false }, prejoinPageEnabled: false },
-                userInfo: { displayName: team.team_name }
+        // --- PEERJS SES BAĞLANTISI ---
+        async function startVoiceChannel() {
+            peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
+            
+            peer.on('open', async () => {
+                try {
+                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    myStream.getAudioTracks()[0].enabled = false; // Başta kapalı
+                    
+                    // Admin'i ara
+                    const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
+                    call.on('stream', (remoteStream) => {
+                        const ra = document.getElementById('remoteAudio');
+                        ra.srcObject = remoteStream;
+                        ra.muted = true; // Başta hoparlör kapalı
+                    });
+                } catch(e) { console.error("Ses hatası:", e); }
             });
         }
 
-        function toggleMic() { if(!jitsiApi) return; isMicOn = !isMicOn; jitsiApi.executeCommand('toggleAudio'); updateVoiceUI(); }
-        function toggleSpk() { if(!jitsiApi) return; isSpkOn = !isSpkOn; jitsiApi.executeCommand('setAudioOutputDevice', isSpkOn ? 'default' : 'none'); updateVoiceUI(); }
-        
+        function toggleMic() {
+            if(!myStream) return;
+            micOn = !micOn;
+            myStream.getAudioTracks()[0].enabled = micOn;
+            updateVoiceUI();
+        }
+
+        function toggleSpk() {
+            spkOn = !spkOn;
+            document.getElementById('remoteAudio').muted = !spkOn;
+            updateVoiceUI();
+        }
+
         function updateVoiceUI() {
             const mBtn = document.getElementById('micBtn'), mIcon = document.getElementById('micIcon');
             const sBtn = document.getElementById('spkBtn'), sIcon = document.getElementById('spkIcon');
-            mBtn.className = isMicOn ? "control-btn btn-active" : "control-btn btn-muted";
-            mIcon.setAttribute('data-lucide', isMicOn ? 'mic' : 'mic-off');
-            sBtn.className = isSpkOn ? "control-btn btn-active" : "control-btn btn-muted";
-            sIcon.setAttribute('data-lucide', isSpkOn ? 'volume-2' : 'volume-x');
+            mBtn.className = micOn ? "control-btn btn-active" : "control-btn btn-muted";
+            mIcon.setAttribute('data-lucide', micOn ? 'mic' : 'mic-off');
+            sBtn.className = spkOn ? "control-btn btn-active" : "control-btn btn-muted";
+            sIcon.setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
             lucide.createIcons();
         }
 
+        // --- HARİTA ---
         const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
         mi.onload = resetM;
         function upd() {
@@ -185,7 +213,7 @@
         function openScanner(p) {
             document.getElementById('pointModal').classList.remove('active'); document.getElementById('qrModal').classList.add('active');
             const hs = new Html5Qrcode("reader");
-            hs.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (d) => { hs.stop(); document.getElementById('qrModal').classList.remove('active'); document.getElementById('contentBody').innerHTML = `<h3 class="text-red-500 font-black uppercase text-sm mb-4">${p.name} - GÖREV</h3><p class="text-white text-xs">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); }, (e) => { });
+            hs.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (d) => { hs.stop(); document.getElementById('qrModal').classList.remove('active'); document.getElementById('contentBody').innerHTML = `<h3 class="text-red-500 font-black text-sm mb-4 uppercase text-white">${p.name} - GÖREV</h3><p class="text-white text-xs">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); }, (e) => { });
         }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
         function closeScanner() { document.getElementById('qrModal').classList.remove('active'); }
