@@ -24,12 +24,14 @@
         .map-point { position: absolute; width: 34px; height: 34px; background: #9b1c31; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; transform: translate(-50%, -50%); z-index: 50; cursor: pointer; pointer-events: auto; box-shadow: 0 0 15px rgba(155, 28, 49, 0.6); }
         .map-point.start { background: #2563eb; }
 
-        /* Mic Button */
-        #micBtn { position: fixed; bottom: 24px; right: 24px; z-index: 150; transition: all 0.3s; }
-        .mic-on { background: #ef4444 !important; scale: 1.1; animation: pulse-mic 1.5s infinite; }
-        @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        /* Ses Kontrol Butonları */
+        .control-btn { transition: all 0.3s; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 4px solid rgba(255,255,255,0.1); }
+        .btn-active { background: #ef4444 !important; border-color: #ef4444 !important; animation: pulse-red 1.5s infinite; }
+        .btn-muted { background: #1e293b; }
         
-        #jitsi-audio { display: none; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        #jitsi-container { position: absolute; width: 0; height: 0; visibility: hidden; pointer-events: none; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
         .st-view-iframe { width: 100%; height: 300px; border-radius: 1rem; border: none; }
@@ -37,44 +39,57 @@
 </head>
 <body class="flex flex-col items-center justify-center">
 
-    <div id="jitsi-audio"></div>
+    <div id="jitsi-container"></div>
 
     <!-- GİRİŞ -->
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6">
         <div class="max-w-md w-full glass p-8 rounded-[2.5rem] border-t-4 border-red-700 shadow-2xl text-center text-white">
             <img src="https://r.resimlink.com/p5fEz.png" class="w-20 mx-auto mb-6">
-            <h1 class="text-xl font-black uppercase mb-8">YARIŞMACI GİRİŞİ</h1>
+            <h1 class="text-xl font-black uppercase mb-8 tracking-tighter">YARIŞMACI PANELİ</h1>
             <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-6 text-center text-xl font-bold outline-none uppercase text-red-500 mb-4 focus:border-red-600">
-            <button onclick="login()" class="w-full py-4 bg-red-700 text-white rounded-xl font-black uppercase tracking-widest">BAĞLAN</button>
+            <button onclick="login()" class="w-full py-4 bg-red-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">SİSTEME BAĞLAN</button>
         </div>
     </div>
 
-    <!-- DASHBOARD -->
+    <!-- PANEL -->
     <div id="dashUI" class="hidden w-full h-full flex flex-col p-4 space-y-4">
         <div class="flex justify-between gap-4">
-            <div class="flex-1 glass rounded-2xl p-4 text-white"><h2 id="teamN" class="text-xs font-black uppercase truncate">---</h2><p id="statL" class="text-[9px] font-bold text-slate-500 uppercase">Sinyal Hazır</p></div>
+            <div class="flex-1 glass rounded-2xl p-4 text-white"><h2 id="teamN" class="text-xs font-black uppercase truncate text-left">---</h2><p id="statL" class="text-[9px] font-bold text-slate-500 uppercase text-left">Canlı Hat Hazır</p></div>
             <div class="flex-1 glass rounded-2xl p-4 text-center border-b-2 border-red-700 text-white"><div id="clock" class="text-2xl font-black digital">00:00:00</div><p class="text-[9px] text-red-500 font-bold uppercase tracking-widest">SÜRE</p></div>
         </div>
         <div class="flex-1 glass rounded-[2.5rem] flex flex-col items-center justify-center text-center p-8">
-            <div id="wait" class="space-y-4 text-white"><i data-lucide="clock" class="w-16 h-16 text-slate-700 mx-auto"></i><h4 class="text-lg font-black uppercase text-slate-400">BAŞLANGIÇ BEKLENİYOR</h4></div>
+            <div id="wait" class="space-y-4 text-white"><i data-lucide="clock" class="w-16 h-16 text-slate-700 mx-auto"></i><h4 class="text-lg font-black uppercase text-slate-400">BAŞLANGIÇ BEKLENİYOR</h4><p class="text-xs text-slate-500 italic">Hakem süreyi başlattığında haritanız açılacaktır.</p></div>
             <div id="go" class="hidden space-y-8">
                 <div class="w-20 h-20 bg-red-700/10 border-2 border-red-700 rounded-full flex items-center justify-center animate-pulse mx-auto"><i data-lucide="navigation" class="text-red-600"></i></div>
-                <button onclick="setMap(true)" class="px-12 py-5 bg-red-700 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl">HARİTAYI AÇ</button>
+                <button onclick="setMap(true)" class="px-12 py-5 bg-red-700 rounded-2xl font-black uppercase text-xs tracking-widest text-white shadow-xl active:scale-95 transition-all">HARİTAYI AÇ</button>
             </div>
         </div>
     </div>
 
-    <!-- SES SİSTEMİ BUTONU -->
-    <button id="micBtn" onclick="toggleMic()" class="hidden p-6 bg-slate-800 text-white rounded-full shadow-2xl border-4 border-white/10 transition-all"><i data-lucide="mic-off" id="micIcon"></i></button>
+    <!-- SES KONTROL ÜNİTESİ -->
+    <div id="voiceControls" class="hidden fixed bottom-6 right-6 z-[150] flex flex-col gap-3">
+        <!-- Hoparlör Butonu -->
+        <button id="spkBtn" onclick="toggleSpeaker()" class="control-btn btn-muted shadow-2xl">
+            <i data-lucide="volume-x" id="spkIcon" class="text-white w-6 h-6"></i>
+        </button>
+        <!-- Mikrofon Butonu -->
+        <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted shadow-2xl">
+            <i data-lucide="mic-off" id="micIcon" class="text-white w-6 h-6"></i>
+        </button>
+    </div>
 
     <!-- HARİTA -->
     <div id="mapLayer">
         <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/50 backdrop-blur-md text-white">
-            <div><h2 class="font-black text-xs uppercase tracking-widest">SAHA HARİTASI</h2><p class="text-[9px] text-red-500 font-bold uppercase">Noktalara Tıklayın</p></div>
+            <div><h2 class="font-black text-xs uppercase tracking-widest">SAHA HARİTASI</h2><p class="text-[9px] text-red-500 font-bold uppercase">Noktalara Tıklayarak Görevleri Görün</p></div>
             <button onclick="setMap(false)" class="p-3 bg-white/5 rounded-xl"><i data-lucide="chevron-down"></i></button>
         </div>
         <div id="vp"><div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none"><div id="pts" class="pointer-events-auto"></div></div></div>
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[110] text-white"><button onclick="zoom(1.4)" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="zoom-in"></i></button><button onclick="resetM()" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="maximize-2"></i></button><button onclick="zoom(0.7)" class="p-5 glass rounded-full shadow-2xl"><i data-lucide="zoom-out"></i></button></div>
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 z-[110] text-white">
+            <button onclick="zoom(1.4)" class="p-5 glass rounded-full shadow-2xl active:scale-90 transition-all"><i data-lucide="zoom-in"></i></button>
+            <button onclick="resetM()" class="p-5 glass rounded-full shadow-2xl active:scale-90 transition-all"><i data-lucide="maximize-2"></i></button>
+            <button onclick="zoom(0.7)" class="p-5 glass rounded-full shadow-2xl active:scale-90 transition-all"><i data-lucide="zoom-out"></i></button>
+        </div>
     </div>
 
     <!-- MODALLAR -->
@@ -88,7 +103,7 @@
             </div>
         </div>
     </div>
-    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[2rem] text-center"><h3 class="text-xs font-black mb-4">QR OKUTUN</h3><div id="reader"></div><button onclick="closeScanner()" class="mt-4 text-xs font-bold text-red-500">VAZGEÇ</button></div></div>
+    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[2rem] text-center"><h3 class="text-xs font-black mb-4 uppercase">QR OKUTUN</h3><div id="reader"></div><button onclick="closeScanner()" class="mt-4 text-xs font-bold text-red-500 uppercase">VAZGEÇ</button></div></div>
     <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-6 rounded-[2rem] text-center relative"><button onclick="closeModals()" class="absolute top-4 right-4 text-slate-500"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-4"></div></div></div>
 
     <script>
@@ -96,7 +111,8 @@
         const SUPABASE_KEY = 'sb_publishable_2lmWYp5Pkvn_BsADVHPKug_KK9n8v2-';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let team = null, timerInt = null, jitsiApi = null, isMicOn = false;
+        let team = null, timerInt = null, jitsiApi = null;
+        let isMicOn = false, isSpeakerOn = false;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy;
 
         const points = [
@@ -115,17 +131,18 @@
 
         async function login() {
             const code = document.getElementById('codeIn').value.trim().toUpperCase();
+            if(!code) return;
             const { data } = await supabaseClient.from('registrations').select('*').eq('team_code', code).single();
             if(data) {
                 team = data;
                 document.getElementById('teamN').innerText = team.team_name;
                 document.getElementById('loginUI').classList.add('hidden');
                 document.getElementById('dashUI').classList.remove('hidden');
-                document.getElementById('micBtn').classList.remove('hidden');
+                document.getElementById('voiceControls').classList.remove('hidden');
                 initPoints(); sync(); 
-                connectVoice('SDU_ORY_GLOBAL'); // Önce globale bağlan
+                connectVoice('SDU_ORY_GLOBAL'); // Konferans Odasına Bağlan
                 setupRealtime();
-            } else alert("Kod Hatalı!");
+            } else alert("Takım Kodu Hatalı!");
         }
 
         // --- CANLI SES KONFERANS ---
@@ -134,12 +151,14 @@
             jitsiApi = new JitsiMeetExternalAPI("meet.jit.si", {
                 roomName: roomName,
                 width: 1, height: 1,
-                parentNode: document.querySelector('#jitsi-audio'),
+                parentNode: document.querySelector('#jitsi-container'),
                 configOverwrite: { 
                     startWithAudioMuted: true, 
                     startWithVideoMuted: true, 
                     prejoinPageEnabled: false,
-                    videoConstraints: { video: false }
+                    videoConstraints: { video: false },
+                    disableRemoteMute: true,
+                    remoteVideoMenu: { disableKick: true }
                 },
                 userInfo: { displayName: team.team_name }
             });
@@ -149,15 +168,23 @@
             if (!jitsiApi) return;
             isMicOn = !isMicOn;
             jitsiApi.executeCommand('toggleAudio');
-            const btn = document.getElementById('micBtn');
-            const icon = document.getElementById('micIcon');
-            if (isMicOn) {
-                btn.className = "fixed bottom-6 right-6 p-6 bg-red-600 text-white rounded-full shadow-2xl z-[150] mic-on";
-                icon.setAttribute('data-lucide', 'mic');
-            } else {
-                btn.className = "fixed bottom-6 right-6 p-6 bg-slate-800 text-white rounded-full shadow-2xl z-[150]";
-                icon.setAttribute('data-lucide', 'mic-off');
-            }
+            const btn = document.getElementById('micBtn'), icon = document.getElementById('micIcon');
+            if (isMicOn) { btn.classList.replace('btn-muted', 'btn-active'); icon.setAttribute('data-lucide', 'mic'); }
+            else { btn.classList.replace('btn-active', 'btn-muted'); icon.setAttribute('data-lucide', 'mic-off'); }
+            lucide.createIcons();
+        }
+
+        function toggleSpeaker() {
+            if (!jitsiApi) return;
+            isSpeakerOn = !isSpeakerOn;
+            // Jitsi'de yerel hoparlörü kapatma komutu olmadığı için ses seviyesini yönetiyoruz
+            jitsiApi.executeCommand('setAudioOutputDevice', isSpeakerOn ? 'default' : 'none');
+            // Bazı tarayıcılarda mute komutu gerekebilir
+            if(!isSpeakerOn) jitsiApi.executeCommand('muteEveryone', 'audio'); 
+            
+            const btn = document.getElementById('spkBtn'), icon = document.getElementById('spkIcon');
+            if (isSpeakerOn) { btn.classList.replace('btn-muted', 'btn-active'); icon.setAttribute('data-lucide', 'volume-2'); }
+            else { btn.classList.replace('btn-active', 'btn-muted'); icon.setAttribute('data-lucide', 'volume-x'); }
             lucide.createIcons();
         }
 
@@ -217,8 +244,8 @@
         }
         function openScanner(p) {
             document.getElementById('pointModal').classList.remove('active'); document.getElementById('qrModal').classList.add('active');
-            const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (d) => { html5QrCode.stop(); document.getElementById('qrModal').classList.remove('active'); document.getElementById('contentBody').innerHTML = `<h3 class="text-red-500 font-black uppercase text-sm mb-4">${p.name} - GÖREV</h3><p class="text-white text-xs">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); }, (e) => { });
+            const hs = new Html5Qrcode("reader");
+            hs.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (d) => { hs.stop(); document.getElementById('qrModal').classList.remove('active'); document.getElementById('contentBody').innerHTML = `<h3 class="text-red-500 font-black uppercase text-sm mb-4">${p.name} - GÖREV</h3><p class="text-white text-xs">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); }, (e) => { });
         }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
         lucide.createIcons();
