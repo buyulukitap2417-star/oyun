@@ -11,163 +11,106 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #020617; 
-            color: white; 
-            margin: 0; 
-            overflow: hidden; 
-            height: 100vh; 
-            touch-action: none; 
-            user-select: none; 
-            -webkit-user-select: none; 
-        }
-
-        .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; user-select: none; -webkit-user-select: none; }
+        .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .digital { font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px #9b1c31; }
-        
         #mapLayer { position: fixed; inset: 0; z-index: 100; background: #020617; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         #mapLayer.open { transform: translateY(0); }
-        
-        #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; cursor: grab; }
-        #canvas { position: absolute; transform-origin: 0 0; will-change: transform; pointer-events: auto; }
-        
-        .map-point { 
-            position: absolute; width: 42px; height: 42px; background: #9b1c31; border: 2.5px solid white; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; 
-            transform: translate(-50%, -50%); z-index: 50; cursor: pointer; pointer-events: auto; 
-            box-shadow: 0 0 20px rgba(155, 28, 49, 0.6); 
-        }
-        .map-point.start { background: #2563eb; box-shadow: 0 0 20px rgba(37, 99, 235, 0.6); }
-        
-        .control-btn { transition: all 0.3s; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: 1.25rem; border: 2.5px solid rgba(255,255,255,0.1); }
+        #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
+        #canvas { position: absolute; transform-origin: center center; will-change: transform; pointer-events: auto; }
+        #mImg { max-width: none; display: block; }
+        .map-point { position: absolute; width: 44px; height: 44px; background: #9b1c31; border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; transform: translate(-50%, -50%); z-index: 50; cursor: pointer; pointer-events: auto; box-shadow: 0 0 25px rgba(155, 28, 49, 0.7); transition: transform 0.2s; }
+        .map-point.start { background: #2563eb; box-shadow: 0 0 25px rgba(37, 99, 235, 0.7); }
+        .map-point:active { transform: translate(-50%, -50%) scale(0.9); }
+        .control-btn { transition: all 0.3s; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 1.5rem; border: 2.5px solid rgba(255,255,255,0.1); }
         .btn-active { background: #ef4444 !important; border-color: #ef4444 !important; animation: pulse-btn 1.5s infinite; }
-        .btn-muted { background: rgba(30, 41, 59, 0.9); }
+        .btn-muted { background: rgba(30, 41, 59, 0.95); }
         @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
         .st-view-iframe { width: 100%; height: 350px; border-radius: 2rem; border: none; }
-        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; flex-direction: column; items-center; justify-content: center; transition: opacity 0.5s; }
+        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center">
 
-    <div id="loader">
-        <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-        <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500 text-center">Sistem Yükleniyor</p>
-    </div>
-
+    <div id="loader"><div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin"></div></div>
     <audio id="remoteAudio" autoplay class="hidden"></audio>
 
-    <!-- GİRİŞ EKRANI -->
+    <!-- GİRİŞ -->
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
-        <div class="max-w-md w-full glass p-8 rounded-[3rem] border-t-4 border-red-700 shadow-2xl">
+        <div class="max-w-md w-full glass p-10 rounded-[3rem] border-t-4 border-red-700 shadow-2xl">
             <img src="https://r.resimlink.com/p5fEz.png" class="w-24 mx-auto mb-6">
-            <h1 class="text-2xl font-black uppercase mb-2 tracking-tight">YARIŞMACI GİRİŞİ</h1>
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em] mb-10">Takım Kodunu Doğrulayın</p>
-            <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6 focus:border-red-600 transition-all">
-            <button onclick="login()" class="w-full py-5 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">BAŞLAT</button>
+            <h1 class="text-3xl font-black uppercase mb-2 tracking-tighter">YARIŞMACI</h1>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] mb-10">Sisteme Giriş Yapın</p>
+            <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-6 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6 focus:border-red-600 transition-all">
+            <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">BAŞLAT</button>
         </div>
     </div>
 
-    <!-- PANEL (DASHBOARD) -->
+    <!-- DASHBOARD -->
     <div id="dashUI" class="hidden w-full h-full flex flex-col p-4 space-y-4">
         <div class="flex justify-between gap-3">
-            <div class="flex-1 glass rounded-2xl p-4 relative overflow-hidden">
+            <div class="flex-1 glass rounded-2xl p-5 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1.5 h-full bg-red-700"></div>
-                <h2 id="teamN" class="text-xs font-black uppercase truncate pr-4 text-left">TAKIM ADI</h2>
-                <div class="flex items-center gap-2 mt-1">
-                    <div id="gpsStatus" class="w-2 h-2 bg-slate-500 rounded-full"></div>
-                    <p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-left">GPS Bekleniyor</p>
+                <h2 id="teamN" class="text-xs font-black uppercase truncate pr-6 text-left">---</h2>
+                <div class="flex items-center gap-2 mt-2">
+                    <div id="gpsStatus" class="w-2 h-2 bg-slate-600 rounded-full"></div>
+                    <p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">GPS Bekleniyor</p>
                 </div>
-                <button onclick="logout()" class="absolute top-4 right-4 text-slate-600 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>
             </div>
-            <div class="flex-1 glass rounded-2xl p-4 text-center border-b-2 border-red-700">
-                <div id="clock" class="text-2xl font-black digital">00:00:00</div>
-                <p class="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1">GÜNCEL SÜRE</p>
+            <div class="flex-1 glass rounded-2xl p-5 text-center border-b-4 border-red-700">
+                <div id="clock" class="text-3xl font-black digital">00:00:00</div>
+                <p class="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1">YARIŞMA SÜRESİ</p>
             </div>
         </div>
 
-        <div class="flex-1 glass rounded-[3rem] flex flex-col items-center justify-center text-center p-8 border border-white/5 shadow-inner">
+        <div class="flex-1 glass rounded-[3rem] flex flex-col items-center justify-center text-center p-8 border border-white/5">
             <div id="wait" class="space-y-6">
-                <div class="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-white/5">
-                    <i data-lucide="hourglass" class="w-10 h-10 text-slate-700 animate-pulse"></i>
-                </div>
+                <div class="w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-white/10 shadow-2xl"><i data-lucide="timer" class="w-12 h-12 text-slate-700 animate-pulse"></i></div>
                 <h4 class="text-xl font-black uppercase text-slate-400">HAZIR OLUN</h4>
-                <p class="text-xs text-slate-500 italic max-w-[200px] mx-auto leading-relaxed">Hakem süreyi başlattığında dijital haritanız aktif hale gelecektir.</p>
+                <p class="text-xs text-slate-500 italic max-w-[200px] leading-relaxed">Süreniz başladığında harita otomatik olarak açılacaktır.</p>
             </div>
             <div id="go" class="hidden space-y-10">
-                <div class="w-28 h-28 bg-red-700/10 border-2 border-red-700 rounded-full flex items-center justify-center animate-pulse mx-auto shadow-2xl">
-                    <i data-lucide="navigation" class="text-red-600 w-12 h-12"></i>
-                </div>
-                <div>
-                    <h4 class="text-2xl font-black uppercase tracking-tighter">SAHADASINIZ!</h4>
-                    <p class="text-slate-400 text-xs mt-2 uppercase tracking-widest font-bold">Haritayı açın ve ilk hedefe koşun.</p>
-                </div>
-                <button onclick="setMap(true)" class="px-16 py-6 bg-red-700 rounded-2xl font-black uppercase text-sm tracking-[0.2em] text-white shadow-2xl active:scale-95 transition-all">HARİTAYI AÇ</button>
+                <div class="w-28 h-28 bg-red-700/10 border-2 border-red-700 rounded-full flex items-center justify-center animate-pulse mx-auto shadow-2xl"><i data-lucide="map" class="text-red-600 w-12 h-12"></i></div>
+                <button onclick="setMap(true)" class="px-16 py-6 bg-red-700 rounded-2xl font-black uppercase text-sm tracking-[0.3em] text-white shadow-2xl active:scale-95 transition-all">HARİTAYI AÇ</button>
             </div>
         </div>
     </div>
 
-    <!-- SES KONTROLLERİ -->
-    <div id="voiceUI" class="hidden fixed bottom-8 right-8 z-[150] flex flex-col gap-4">
-        <button id="spkBtn" onclick="toggleSpk()" class="control-btn btn-muted shadow-2xl"><i data-lucide="volume-x" id="spkIcon" class="text-white w-7 h-7"></i></button>
-        <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted shadow-2xl"><i data-lucide="mic-off" id="micIcon" class="text-white w-7 h-7"></i></button>
+    <!-- SES -->
+    <div id="voiceUI" class="hidden fixed bottom-10 right-10 z-[150] flex flex-col gap-5">
+        <button id="spkBtn" onclick="toggleSpk()" class="control-btn btn-muted shadow-3xl"><i data-lucide="volume-x" id="spkIcon" class="text-white w-8 h-8"></i></button>
+        <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted shadow-3xl"><i data-lucide="mic-off" id="micIcon" class="text-white w-8 h-8"></i></button>
     </div>
 
-    <!-- HARİTA KATMANI -->
+    <!-- HARİTA -->
     <div id="mapLayer">
-        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/60 backdrop-blur-2xl text-white">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-700 rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="map" class="w-5 h-5"></i></div>
-                <div>
-                    <h2 class="font-black text-xs uppercase tracking-widest leading-none">SAHA HARİTASI</h2>
-                    <p class="text-[9px] text-red-500 font-bold uppercase mt-1">Hedefleri Görmek İçin Tıklayın</p>
-                </div>
-            </div>
-            <button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl active:bg-red-700 transition-colors"><i data-lucide="chevron-down"></i></button>
+        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/70 backdrop-blur-3xl text-white">
+            <div class="flex items-center gap-3"><div class="w-10 h-10 bg-red-700 rounded-xl flex items-center justify-center shadow-lg"><i data-lucide="navigation" class="w-5 h-5"></i></div><div><h2 class="font-black text-xs uppercase tracking-widest">DİJİTAL HARİTA</h2><p class="text-[9px] text-red-500 font-bold uppercase">Hedefe Koş ve QR Okut</p></div></div>
+            <button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl active:bg-red-700"><i data-lucide="chevron-down"></i></button>
         </div>
-        
         <div id="vp"><div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none" alt="Map"><div id="pts" class="pointer-events-auto"></div></div></div>
-        
         <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex gap-6 z-[110] text-white">
-            <button onclick="zoom(1.5)" class="p-6 glass rounded-2xl shadow-2xl active:scale-90 transition-all"><i data-lucide="zoom-in"></i></button>
-            <button onclick="resetM()" class="p-6 glass rounded-2xl shadow-2xl active:scale-90 transition-all"><i data-lucide="maximize-2"></i></button>
-            <button onclick="zoom(0.6)" class="p-6 glass rounded-2xl shadow-2xl active:scale-90 transition-all"><i data-lucide="zoom-out"></i></button>
+            <button onclick="zoom(1.5)" class="p-6 glass rounded-[1.5rem] shadow-2xl active:scale-90"><i data-lucide="zoom-in"></i></button>
+            <button onclick="resetM()" class="p-6 glass rounded-[1.5rem] shadow-2xl active:scale-90"><i data-lucide="maximize-2"></i></button>
+            <button onclick="zoom(0.6)" class="p-6 glass rounded-[1.5rem] shadow-2xl active:scale-90"><i data-lucide="zoom-out"></i></button>
         </div>
     </div>
 
-    <!-- MODALLAR -->
     <div id="pointModal" class="modal-overlay text-white">
-        <div class="glass w-full max-w-sm p-10 rounded-[3rem] text-center space-y-8 shadow-3xl">
-            <div class="w-20 h-20 bg-red-700/20 rounded-full flex items-center justify-center mx-auto text-red-600 border border-red-700/30">
-                <i data-lucide="map-pin" class="w-10 h-10"></i>
-            </div>
+        <div class="glass w-full max-w-sm p-10 rounded-[3.5rem] text-center space-y-8 shadow-3xl">
             <h3 id="modalPointName" class="text-xl font-black uppercase">---</h3>
             <div class="space-y-4">
-                <button id="btnTask" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black text-xs uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"><i data-lucide="qr-code"></i> GÖREVİ AÇ (QR OKUT)</button>
-                <button id="btnLoc" class="w-full py-6 glass border border-white/10 text-white rounded-2xl font-bold text-xs uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all"><i data-lucide="eye"></i> KONUMU GÖR</button>
+                <button id="btnTask" class="w-full py-6 bg-red-700 text-white rounded-3xl font-black text-xs uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95"><i data-lucide="qr-code"></i> GÖREVİ AÇ (QR OKUT)</button>
+                <button id="btnLoc" class="w-full py-6 glass border border-white/10 text-white rounded-3xl font-bold text-xs uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95"><i data-lucide="eye"></i> KONUMU GÖR</button>
                 <button onclick="closeModals()" class="w-full py-2 text-slate-500 text-[10px] font-bold uppercase tracking-widest">KAPAT</button>
             </div>
         </div>
     </div>
-    
-    <div id="qrModal" class="modal-overlay text-white">
-        <div class="glass w-full max-w-md p-6 rounded-[3rem] text-center text-white border-t-4 border-red-700 shadow-2xl">
-            <h3 class="text-xs font-black mb-6 uppercase tracking-[0.2em]">HEDEF QR KODUNU TARAYIN</h3>
-            <div id="reader" class="rounded-2xl overflow-hidden shadow-2xl border-4 border-black"></div>
-            <button onclick="closeScanner()" class="mt-8 w-full py-5 glass border border-red-900/30 text-red-500 font-bold uppercase text-xs rounded-2xl">VAZGEÇ</button>
-        </div>
-    </div>
-    
-    <div id="contentModal" class="modal-overlay text-white">
-        <div class="glass w-full max-w-lg p-8 rounded-[3rem] text-center relative border-t-4 border-emerald-500 shadow-3xl">
-            <button onclick="closeModals()" class="absolute top-6 right-6 text-slate-500 hover:text-white"><i data-lucide="x"></i></button>
-            <div id="contentBody" class="mt-4 space-y-6"></div>
-        </div>
-    </div>
+    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[3rem] text-center border-t-4 border-red-700 shadow-3xl"><h3 class="text-xs font-black mb-6 uppercase tracking-widest">HEDEF QR OKUTUN</h3><div id="reader" class="rounded-3xl overflow-hidden shadow-2xl border-4 border-black"></div><button onclick="closeScanner()" class="mt-8 w-full py-5 glass border border-red-900/30 text-red-500 font-bold uppercase text-xs rounded-2xl">VAZGEÇ</button></div></div>
+    <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-8 rounded-[3.5rem] text-center relative border-t-4 border-emerald-500 shadow-3xl"><button onclick="closeModals()" class="absolute top-6 right-6 text-slate-500 hover:text-white"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-6"></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://hxdmiamcednlzoklkxnu.supabase.co';
@@ -175,29 +118,28 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
-        let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, selectedPoint = null;
-        let lastLat = null, lastLng = null;
+        let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, selectedPoint = null, lastLat = null, lastLng = null;
 
         const points = [
-            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Yarışma Başladı! İlk koordinatı bulun.", embed: "https://www.google.com/maps/embed?pb=!4v1771617689736!6m8!1m7!1sRO-U8WGElZ3Py_Ecp1CKBA!2m2!1d37.83084480198436!2d30.53590397797262!3f158.10045157168938!4f-0.05794305684364076!5f0.4000000000000002", secret: "START_POINT" },
-            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Olimpik Havuz", task: "Havuz başındaki QR kodu bularak görevi tamamlayın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617737459!6m8!1m7!1seBYXHNUGftz0PO15pjIsgA!2m2!1d37.83222186624993!2d30.53236500664342!3f95.09038325697996!4f-5.134908572958537!5f0.4000000000000002", secret: "POINT_1" },
-            { id: 2, x: 590, y: 210, name: "ISUBÜ Orman Fakültesi", task: "Doğanın kucağında bir matematik bilmecesi sizi bekliyor.", embed: "https://www.google.com/maps/embed?pb=!4v1771617823918!6m8!1m7!1siZhN5Nv-r-h3hxI3W1mfKQ!2m2!1d37.83211746106197!2d30.53754298522506!3f126.67348552797063!4f5.166187979327333!5f0.4000000000000002", secret: "POINT_2" },
-            { id: 3, x: 200, y: 520, name: "Bilgi Merkezi", task: "Bilginin kalbinde sessizce çözüme ulaşın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617924715!6m8!1m7!1sExYVwsM4RdVnKU0uRJj0Vw!2m2!1d37.82818812592497!2d30.53224474946234!3f346.4197002666084!4f-0.5840344576972711!5f0.4000000000000002", secret: "POINT_3" },
-            { id: 4, x: 410, y: 450, name: "Academi Yaşam Merkezi", task: "Yaşam merkezinde saklı ipucunu bularak deşifre edin.", embed: "https://www.google.com/maps/embed?pb=!4v1771617901489!6m8!1m7!1sfHdiGDOl_9j3qBDXUq1Hsg!2m2!1d37.82937176700175!2d30.53426187517274!3f20.379486408347063!4f1.3607931673231661!5f0.7820865974627469", secret: "POINT_4" },
-            { id: 5, x: 490, y: 530, name: "Doğu Durakları", task: "Otobüs duraklarındaki tabelayı dikkatle inceleyin.", embed: "https://www.google.com/maps/embed?pb=!4v1771618062791!6m8!1m7!1shM0pNAKrTLqDxdtc1hYUyg!2m2!1d37.82851589332846!2d30.53640783067043!3f206.6784605769838!4f3.36776164427377!5f0.4000000000000002", secret: "POINT_5" },
-            { id: 6, x: 375, y: 285, name: "SDÜ Spor Bilimleri Fakültesi", task: "Fakülte girişindeki hedefe ulaşın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617770097!6m8!1m7!1sc9XXggbNQi0Yx2dA-kU9pw!2m2!1d37.83117660022433!2d30.53445828913934!3f33.28225217166947!4f1.9919576983564724!5f0.4000000000000002", secret: "POINT_6" },
-            { id: 7, x: 740, y: 370, name: "İlahiyat Durakları", task: "İlahiyat tabelasının altındaki şifreyi bulun.", embed: "https://www.google.com/maps/embed?pb=!4v1771617872056!6m8!1m7!1sJx9yem-pjeR7Wc_7G-Ew5g!2m2!1d37.82991888681035!2d30.53919883634785!3f30.193196586987977!4f-2.9730351787111005!5f0.4000000000000002", secret: "POINT_7" },
-            { id: 8, x: 675, y: 540, name: "Yaşam Cafe", task: "Cafe önünde bir mola verip soruyu çözün.", embed: "https://www.google.com/maps/embed?pb=!4v1771617989304!6m8!1m7!1s2uz-6qNzGXBflBQxAe69Xw!2m2!1d37.82821271069792!2d30.53881902284264!3f91.93654445552963!4f-3.4669365772635103!5f0.4000000000000002", secret: "POINT_8" },
-            { id: 9, x: 440, y: 690, name: "İİBF", task: "Ekonomik dengeleri çözme zamanı!", embed: "https://www.google.com/maps/embed?pb=!4v1771617959900!6m8!1m7!1sYLl0RJWEdH1jPKEZi0Z2hQ!2m2!1d37.82650566961525!2d30.53528759897594!3f116.46149291944955!4f5.666874545602823!5f0.4000000000000002", secret: "POINT_9" },
-            { id: 10, x: 170, y: 650, name: "Kulüp Odaları", task: "Sosyal zekanı matematiksel zekanla harmanla.", embed: "https://www.google.com/maps/embed?pb=!4v1771618029704!6m8!1m7!1sPbZKPRv7M-zo6S4l7z8hYA!2m2!1d37.82785271437022!2d30.53077925418662!3f48.440361512346335!4f-2.942266211748219!5f0.4000000000000002", secret: "POINT_10" }
+            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", task: "Başlangıç Noktası! İlk hedefe ilerle!", embed: "https://www.google.com/maps/embed?pb=!4v1771617689736!6m8!1m7!1sRO-U8WGElZ3Py_Ecp1CKBA!2m2!1d37.83084480198436!2d30.53590397797262!3f158.10045157168938!4f-0.05794305684364076!5f0.4000000000000002", secret: "START_POINT" },
+            { id: 1, x: 222, y: 220, name: "SDÜ 29 Ekim Olimpik Havuz", task: "Havuz başındaki QR kodu tarayın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617737459!6m8!1m7!1seBYXHNUGftz0PO15pjIsgA!2m2!1d37.83222186624993!2d30.53236500664342!3f95.09038325697996!4f-5.134908572958537!5f0.4000000000000002", secret: "POINT_1" },
+            { id: 2, x: 590, y: 210, name: "ISUBÜ Orman Fakültesi", task: "Doğadaki bilmeceyi çözün.", embed: "https://www.google.com/maps/embed?pb=!4v1771617823918!6m8!1m7!1siZhN5Nv-r-h3hxI3W1mfKQ!2m2!1d37.83211746106197!2d30.53754298522506!3f126.67348552797063!4f5.166187979327333!5f0.4000000000000002", secret: "POINT_2" },
+            { id: 3, x: 200, y: 520, name: "Bilgi Merkezi", task: "Bilginin kalbinde cevabı arayın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617924715!6m8!1m7!1sExYVwsM4RdVnKU0uRJj0Vw!2m2!1d37.82818812592497!2d30.53224474946234!3f346.4197002666084!4f-0.5840344576972711!5f0.4000000000000002", secret: "POINT_3" },
+            { id: 4, x: 410, y: 450, name: "Academi Yaşam Merkezi", task: "Academi'de saklı şifreyi bulun.", embed: "https://www.google.com/maps/embed?pb=!4v1771617901489!6m8!1m7!1sfHdiGDOl_9j3qBDXUq1Hsg!2m2!1d37.82937176700175!2d30.53426187517274!3f20.379486408347063!4f1.3607931673231661!5f0.7820865974627469", secret: "POINT_4" },
+            { id: 5, x: 490, y: 530, name: "Doğu Durakları", task: "Tabeladaki gizli rakamı deşifre edin.", embed: "https://www.google.com/maps/embed?pb=!4v1771618062791!6m8!1m7!1shM0pNAKrTLqDxdtc1hYUyg!2m2!1d37.82851589332846!2d30.53640783067043!3f206.6784605769838!4f3.36776164427377!5f0.4000000000000002", secret: "POINT_5" },
+            { id: 6, x: 375, y: 285, name: "SDÜ Spor Bilimleri Fakültesi", task: "Saha görevine odaklanın.", embed: "https://www.google.com/maps/embed?pb=!4v1771617770097!6m8!1m7!1sc9XXggbNQi0Yx2dA-kU9pw!2m2!1d37.83117660022433!2d30.53445828913934!3f33.28225217166947!4f1.9919576983564724!5f0.4000000000000002", secret: "POINT_6" },
+            { id: 7, x: 740, y: 370, name: "İlahiyat Durakları", task: "Durak altındaki kodu girin.", embed: "https://www.google.com/maps/embed?pb=!4v1771617872056!6m8!1m7!1sJx9yem-pjeR7Wc_7G-Ew5g!2m2!1d37.82991888681035!2d30.53919883634785!3f30.193196586987977!4f-2.9730351787111005!5f0.4000000000000002", secret: "POINT_7" },
+            { id: 8, x: 675, y: 540, name: "Yaşam Cafe", task: "Cafe molasında soruyu çözün.", embed: "https://www.google.com/maps/embed?pb=!4v1771617989304!6m8!1m7!1s2uz-6qNzGXBflBQxAe69Xw!2m2!1d37.82821271069792!2d30.53881902284264!3f91.93654445552963!4f-3.4669365772635103!5f0.4000000000000002", secret: "POINT_8" },
+            { id: 9, x: 440, y: 690, name: "İİBF", task: "İktisadi denklemi çözme zamanı!", embed: "https://www.google.com/maps/embed?pb=!4v1771617959900!6m8!1m7!1sYLl0RJWEdH1jPKEZi0Z2hQ!2m2!1d37.82650566961525!2d30.53528759897594!3f116.46149291944955!4f5.666874545602823!5f0.4000000000000002", secret: "POINT_9" },
+            { id: 10, x: 170, y: 650, name: "Kulüp Odaları", task: "Kulüp şifresini bulun.", embed: "https://www.google.com/maps/embed?pb=!4v1771618029704!6m8!1m7!1sPbZKPRv7M-zo6S4l7z8hYA!2m2!1d37.82785271437022!2d30.53077925418662!3f48.440361512346335!4f-2.942266211748219!5f0.4000000000000002", secret: "POINT_10" }
         ];
 
         window.onload = async () => {
-            lucide.createIcons();
             const saved = localStorage.getItem('sdu_team_code');
             if(saved) { document.getElementById('codeIn').value = saved; await login(); }
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            lucide.createIcons();
         };
 
         async function login() {
@@ -210,9 +152,9 @@
                 document.getElementById('loginUI').classList.add('hidden');
                 document.getElementById('dashUI').classList.remove('hidden');
                 document.getElementById('voiceUI').classList.remove('hidden');
-                initPoints(); sync(); startVoiceChannel(); startGPS();
-                supabaseClient.channel('game_up').on('postgres_changes', { event:'UPDATE', schema:'public', table:'registrations', filter:`id=eq.${team.id}` }, (p) => { team = p.new; sync(); }).subscribe();
-            } else { alert("Hatalı Takım Kodu!"); localStorage.removeItem('sdu_team_code'); }
+                initPoints(); sync(); startVoice(); startGPS();
+                supabaseClient.channel('team_up').on('postgres_changes', { event:'UPDATE', schema:'public', table:'registrations', filter:`id=eq.${team.id}` }, (p) => { team = p.new; sync(); }).subscribe();
+            } else { alert("Kod Hatalı!"); localStorage.removeItem('sdu_team_code'); }
         }
 
         function logout() { if(confirm("Çıkış?")) { localStorage.removeItem('sdu_team_code'); location.reload(); } }
@@ -223,65 +165,64 @@
                 const { latitude: lat, longitude: lng } = pos.coords;
                 document.getElementById('gpsStatus').className = "w-2 h-2 bg-emerald-500 rounded-full animate-pulse";
                 document.getElementById('gpsText').innerText = "GPS AKTİF";
-                document.getElementById('gpsText').classList.replace('text-slate-500', 'text-emerald-500');
+                document.getElementById('gpsText').className = "text-[9px] font-bold text-emerald-500 uppercase tracking-widest";
                 if(team.is_timer_running) {
                     const dist = lastLat ? Math.sqrt(Math.pow(lat-lastLat, 2) + Math.pow(lng-lastLng, 2)) : 1;
                     if(dist > 0.0001) { 
                         lastLat = lat; lastLng = lng;
-                        const hist = [...(team.path_history || []), { lat, lng, time: new Date().toISOString() }];
+                        const hist = [...(team.path_history || []), { lat, lng, time: new Date().toISOString() }].slice(-100);
                         await supabaseClient.from('registrations').update({ last_lat: lat, last_lng: lng, path_history: hist }).eq('id', team.id);
                     }
                 }
             }, null, { enableHighAccuracy: true });
         }
 
-        async function startVoiceChannel() {
+        async function startVoice() {
             peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
             peer.on('open', async () => {
                 try {
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                     myStream.getAudioTracks()[0].enabled = false;
                     const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
                     call.on('stream', (rs) => { const ra = document.getElementById('remoteAudio'); ra.srcObject = rs; ra.muted = true; });
-                } catch(e) { console.error("Ses açılamadı"); }
+                } catch(e) { }
             });
         }
-
         function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks()[0].enabled = micOn; upVoiceUI(); }
         function toggleSpk() { spkOn = !spkOn; document.getElementById('remoteAudio').muted = !spkOn; upVoiceUI(); }
         function upVoiceUI() {
-            const mBtn = document.getElementById('micBtn'), mIcon = document.getElementById('micIcon'), sBtn = document.getElementById('spkBtn'), sIcon = document.getElementById('spkIcon');
-            mBtn.className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl";
-            mIcon.setAttribute('data-lucide', micOn ? 'mic' : 'mic-off');
-            sBtn.className = spkOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl";
-            sIcon.setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
+            const mB = document.getElementById('micBtn'), mI = document.getElementById('micIcon'), sB = document.getElementById('spkBtn'), sI = document.getElementById('spkIcon');
+            mB.className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl"; mI.setAttribute('data-lucide', micOn ? 'mic' : 'mic-off');
+            sB.className = spkOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl"; sI.setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
             lucide.createIcons();
         }
 
         const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
-        mi.onload = resetM;
+        mi.onload = resetM; window.onresize = resetM;
 
         function upd() {
             const vw = vp.clientWidth, vh = vp.clientHeight, mw = mi.naturalWidth * sc, mh = mi.naturalHeight * sc;
-            if (mw <= vw) tx = (vw - mw) / 2; else { tx = Math.min(0, Math.max(vw - mw, tx)); }
-            if (mh <= vh) ty = (vh - mh) / 2; else { ty = Math.min(0, Math.max(vh - mh, ty)); }
+            if (mw <= vw) tx = (vw - mw) / 2; else tx = Math.min(0, Math.max(vw - mw, tx));
+            if (mh <= vh) ty = (vh - mh) / 2; else ty = Math.min(0, Math.max(vh - mh, ty));
             cv.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`;
         }
         function zoom(f) { sc = Math.max(minSc, Math.min(6, sc * f)); upd(); }
         function resetM() { 
-            if(!mi.naturalWidth) return; 
-            minSc = Math.min(vp.clientWidth / mi.naturalWidth, vp.clientHeight / mi.naturalHeight);
-            sc = minSc; tx = (vp.clientWidth - mi.naturalWidth * sc) / 2; ty = (vp.clientHeight - mi.naturalHeight * sc) / 2;
+            if(!mi.naturalWidth) return;
+            const vpw = vp.clientWidth, vph = vp.clientHeight;
+            minSc = Math.min(vpw / mi.naturalWidth, vph / mi.naturalHeight);
+            sc = minSc; tx = (vpw - mi.naturalWidth * sc) / 2; ty = (vph - mi.naturalHeight * sc) / 2;
+            cv.style.width = mi.naturalWidth + "px"; cv.style.height = mi.naturalHeight + "px";
             upd(); 
         }
-        function setMap(b) { document.getElementById('mapLayer').classList.toggle('open', b); if(b) setTimeout(resetM, 100); }
+        function setMap(b) { document.getElementById('mapLayer').classList.toggle('open', b); if(b) setTimeout(resetM, 150); }
         vp.onpointerdown = e => { if (sc <= minSc) return; isD = true; sx = e.clientX - tx; sy = e.clientY - ty; vp.setPointerCapture(e.pointerId); };
         window.onpointermove = e => { if(isD) { tx = e.clientX - sx; ty = e.clientY - sy; upd(); } };
         window.onpointerup = e => { isD = false; vp.releasePointerCapture(e.pointerId); };
-        vp.onwheel = e => { e.preventDefault(); zoom(e.deltaY > 0 ? 0.8 : 1.25); }, { passive: false };
+        vp.onwheel = e => { e.preventDefault(); zoom(e.deltaY > 0 ? 0.75 : 1.33); }, { passive: false };
 
         function initPoints() {
-            const pts = document.getElementById('pts'); pts.innerHTML = '';
+            const container = document.getElementById('pts'); container.innerHTML = '';
             points.forEach(p => {
                 const div = document.createElement('div');
                 div.className = `map-point ${p.type === 'start' ? 'start' : ''}`;
@@ -289,7 +230,7 @@
                 div.innerHTML = p.type === 'start' ? '<i data-lucide="flag" class="w-4 h-4 text-white"></i>' : p.id;
                 div.onpointerdown = e => e.stopPropagation();
                 div.onclick = e => { e.stopPropagation(); openPointModal(p); };
-                pts.appendChild(div);
+                container.appendChild(div);
             });
             lucide.createIcons();
         }
@@ -300,7 +241,7 @@
             document.getElementById('btnTask').onclick = () => openScanner();
             document.getElementById('btnLoc').onclick = () => { 
                 closeModals(); 
-                document.getElementById('contentBody').innerHTML = `<h3 class="font-black text-white text-[10px] mb-4 uppercase tracking-[0.2em]">${p.name}</h3><iframe class="st-view-iframe" src="${p.embed}"></iframe>`; 
+                document.getElementById('contentBody').innerHTML = `<h3 class="font-black text-white text-xs mb-4 uppercase tracking-widest">${p.name}</h3><iframe class="st-view-iframe" src="${p.embed}"></iframe>`; 
                 document.getElementById('contentModal').classList.add('active'); 
             };
         }
@@ -311,22 +252,22 @@
             hs = new Html5Qrcode("reader");
             hs.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (d) => {
                 if(d === selectedPoint.secret) { hs.stop().then(() => { document.getElementById('qrModal').classList.remove('active'); showTask(selectedPoint); }); }
-                else { alert("Yanlış hedef!"); }
+                else { alert("Yanlış Hedef QR!"); }
             }, null);
         }
         function showTask(p) {
-            document.getElementById('contentBody').innerHTML = `<div class="p-6 bg-emerald-500/10 rounded-[2.5rem] border border-emerald-500/20 text-left"><h3 class="text-white font-black text-lg uppercase leading-none mb-6">${p.name}</h3><div class="flex items-center gap-3 p-4 glass rounded-2xl mb-6"><i data-lucide="check-circle" class="text-emerald-500"></i><p class="text-[10px] font-bold text-emerald-500 uppercase">Doğrulandı</p></div><p class="text-white text-sm italic leading-relaxed">${p.task}</p></div>`;
+            document.getElementById('contentBody').innerHTML = `<div class="p-8 bg-emerald-500/10 rounded-[3rem] border border-emerald-500/20 text-left"><h3 class="text-white font-black text-xl uppercase leading-tight mb-6">${p.name}</h3><div class="flex items-center gap-3 p-4 glass rounded-2xl mb-8"><i data-lucide="check-circle" class="text-emerald-500"></i><p class="text-[10px] font-bold text-emerald-500 uppercase">HEDEF DOĞRULANDI</p></div><p class="text-white text-sm leading-relaxed italic">${p.task}</p></div>`;
             document.getElementById('contentModal').classList.add('active'); lucide.createIcons();
         }
         function closeScanner() { if(hs) hs.stop().then(() => document.getElementById('qrModal').classList.remove('active')); else document.getElementById('qrModal').classList.remove('active'); }
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); selectedPoint = null; }
         function sync() {
             if(timerInt) clearInterval(timerInt);
             const run = team.is_timer_running;
             document.getElementById('wait').classList.toggle('hidden', run);
             document.getElementById('go').classList.toggle('hidden', !run);
             const t0 = new Date(team.timer_started_at).getTime();
-            if(run) { timerInt = setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000) + Number(team.elapsed_seconds || 0); renderTime(s); }, 1000); } 
+            if(run) { timerInt = setInterval(() => { const sec = Math.floor((Date.now() - t0) / 1000) + Number(team.elapsed_seconds || 0); renderTime(sec); }, 1000); } 
             else { renderTime(team.elapsed_seconds || 0); }
         }
         function renderTime(s) { document.getElementById('clock').innerText = `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
