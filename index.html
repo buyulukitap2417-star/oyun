@@ -11,7 +11,19 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; }
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #020617; 
+            color: white; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh; 
+            touch-action: none; 
+            user-select: none; 
+            -webkit-user-select: none; 
+        }
+
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .digital { font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px #9b1c31; }
         
@@ -28,9 +40,9 @@
         }
         .map-point.start { background: #2563eb; }
 
-        /* Yerleşik Zoom Butonları */
+        /* Yerleşik Zoom Butonları - Sağ Sütun */
         .zoom-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 120; }
-        .zoom-btn { width: 48px; height: 48px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s; }
+        .zoom-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s; }
         .zoom-btn:active { transform: scale(0.9); background: #9b1c31; }
 
         .control-btn { transition: all 0.3s; width: 64px; height: 64px; border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; border: 2.5px solid rgba(255,255,255,0.1); }
@@ -41,12 +53,16 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
         .st-view-iframe { width: 100%; height: 380px; border-radius: 2rem; border: none; }
-        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; items-center; justify-content: center; transition: opacity 0.5s; }
+        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; flex-direction: column; items-center; justify-content: center; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center">
 
-    <div id="loader"><div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin"></div></div>
+    <div id="loader">
+        <div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">Sistem Hazırlanıyor</p>
+    </div>
+
     <audio id="remoteAudio" autoplay class="hidden"></audio>
 
     <!-- GİRİŞ EKRANI -->
@@ -69,7 +85,7 @@
                     <div id="gpsStatus" class="w-2 h-2 bg-slate-600 rounded-full"></div>
                     <p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">GPS Bekleniyor</p>
                 </div>
-                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500 hover:text-red-500 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i></button>
             </div>
             <div class="flex-1 glass rounded-2xl p-5 text-center border-b-4 border-red-700">
                 <div id="clock" class="text-3xl font-black digital">00:00:00</div>
@@ -115,7 +131,6 @@
         </div>
     </div>
 
-    <!-- MODALLAR -->
     <div id="pointModal" class="modal-overlay text-white">
         <div class="glass w-full max-w-sm p-10 rounded-[3.5rem] text-center space-y-8 shadow-3xl">
             <h3 id="modalPointName" class="text-xl font-black uppercase">---</h3>
@@ -164,13 +179,18 @@
             { id: 10, x: 170, y: 650, name: "Kulüp Odaları", secret: "POINT_10", embed: "https://www.google.com/maps/embed?pb=!4v1771618029704!6m8!1m7!1sPbZKPRv7M-zo6S4l7z8hYA!2m2!1d37.82785271437022!2d30.53077925418662!3f48.440361512346335!4f-2.942266211748219!5f0.4000000000000002" }
         ];
 
-        window.onload = async () => {
+        // --- HIZLI BAŞLATMA MANTIĞI ---
+        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             const savedCode = localStorage.getItem('sdu_team_code');
-            if(savedCode) { document.getElementById('codeIn').value = savedCode; await login(); }
+            if(savedCode) {
+                document.getElementById('codeIn').value = savedCode;
+                await login();
+            }
+            // Loader'ı veritabanı sorgusundan sonra kapat
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        };
+        });
 
         async function login() {
             const code = document.getElementById('codeIn').value.trim().toUpperCase();
@@ -184,10 +204,10 @@
                 document.getElementById('voiceUI').classList.remove('hidden');
                 initPoints(); sync(); startVoice(); startGPS();
                 supabaseClient.channel('team_chan').on('postgres_changes', { event:'UPDATE', schema:'public', table:'registrations', filter:`id=eq.${team.id}` }, (p) => { team = p.new; sync(); }).subscribe();
-            } else { alert("Takım Kodu Hatalı!"); localStorage.removeItem('sdu_team_code'); }
+            } else { alert("Kod Hatalı!"); localStorage.removeItem('sdu_team_code'); }
         }
 
-        function logout() { if(confirm("Çıkış yapmak istediğine emin misin?")) { localStorage.removeItem('sdu_team_code'); location.reload(); } }
+        function logout() { if(confirm("Çıkış Yapılsın mı?")) { localStorage.removeItem('sdu_team_code'); location.reload(); } }
 
         function startGPS() {
             if (!navigator.geolocation) return;
@@ -214,8 +234,8 @@
                     myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                     myStream.getAudioTracks()[0].enabled = false;
                     const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
-                    call.on('stream', (rs) => { document.getElementById('remoteAudio').srcObject = rs; ra.muted = true; });
-                } catch(e) { console.error("Mic error"); }
+                    call.on('stream', (rs) => { document.getElementById('remoteAudio').srcObject = rs; });
+                } catch(e) { }
             });
         }
 
