@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; -webkit-user-select: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .digital { font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px #9b1c31; }
         #mapLayer { position: fixed; inset: 0; z-index: 100; background: #000; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
@@ -36,9 +36,9 @@
 
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
         <div class="max-w-md w-full glass p-10 rounded-[3rem] border-t-4 border-red-700 shadow-2xl">
-            <h1 class="text-3xl font-black uppercase mb-10">YARIŞMACI</h1>
+            <h1 class="text-3xl font-black uppercase mb-10 tracking-tighter">YARIŞMACI PORTALI</h1>
             <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-6 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6 focus:border-red-600 transition-all">
-            <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">BAĞLAN</button>
+            <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">SİSTEME BAĞLAN</button>
         </div>
     </div>
 
@@ -80,20 +80,6 @@
         let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, lastLat = null, lastLng = null;
 
-        const points = [
-            { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", secret: "START_POINT", embed: "https://www.google.com/maps/embed?pb=!4v1771617689736!6m8!1m7!1sRO-U8WGElZ3Py_Ecp1CKBA!2m2!1d37.83084480198436!2d30.53590397797262!3f158.10045157168938!4f-0.05794305684364076!5f0.4000000000000002" },
-            { id: 1, x: 222, y: 220, name: "Yüzme Havuzu", secret: "POINT_1", embed: "https://www.google.com/maps/embed?pb=!4v1771617737459!6m8!1m7!1seBYXHNUGftz0PO15pjIsgA!2m2!1d37.83222186624993!2d30.53236500664342!3f95.09038325697996!4f-5.134908572958537!5f0.4000000000000002" },
-            { id: 2, x: 590, y: 210, name: "Orman Fakültesi", secret: "POINT_2", embed: "https://www.google.com/maps/embed?pb=!4v1771617823918!6m8!1m7!1siZhN5Nv-r-h3hxI3W1mfKQ!2m2!1d37.83211746106197!2d30.53754298522506!3f126.67348552797063!4f5.166187979327333!5f0.4000000000000002" },
-            { id: 3, x: 200, y: 520, name: "Bilgi Merkezi", secret: "POINT_3", embed: "https://www.google.com/maps/embed?pb=!4v1771617924715!6m8!1m7!1sExYVwsM4RdVnKU0uRJj0Vw!2m2!1d37.82818812592497!2d30.53224474946234!3f346.4197002666084!4f-0.5840344576972711!5f0.4000000000000002" },
-            { id: 4, x: 410, y: 450, name: "Academi Yaşam", secret: "POINT_4", embed: "https://www.google.com/maps/embed?pb=!4v1771617901489!6m8!1m7!1sfHdiGDOl_9j3qBDXUq1Hsg!2m2!1d37.82937176700175!2d30.53426187517274!3f20.379486408347063!4f1.3607931673231661!5f0.7820865974627469" },
-            { id: 5, x: 490, y: 530, name: "Doğu Durakları", secret: "POINT_5", embed: "https://www.google.com/maps/embed?pb=!4v1771618062791!6m8!1m7!1shM0pNAKrTLqDxdtc1hYUyg!2m2!1d37.82851589332846!2d30.53640783067043!3f206.6784605769838!4f3.36776164427377!5f0.4000000000000002" },
-            { id: 6, x: 375, y: 285, name: "Spor Bilimleri", secret: "POINT_6", embed: "https://www.google.com/maps/embed?pb=!4v1771617770097!6m8!1m7!1sc9XXggbNQi0Yx2dA-kU9pw!2m2!1d37.83117660022433!2d30.53445828913934!3f33.28225217166947!4f1.9919576983564724!5f0.4000000000000002" },
-            { id: 7, x: 740, y: 370, name: "İlahiyat Durakları", secret: "POINT_7", embed: "https://www.google.com/maps/embed?pb=!4v1771617872056!6m8!1m7!1sJx9yem-pjeR7Wc_7G-Ew5g!2m2!1d37.82991888681035!2d30.53919883634785!3f30.193196586987977!4f-2.9730351787111005!5f0.4000000000000002" },
-            { id: 8, x: 675, y: 540, name: "Yaşam Cafe", secret: "POINT_8", embed: "https://www.google.com/maps/embed?pb=!4v1771617989304!6m8!1m7!1s2uz-6qNzGXBflBQxAe69Xw!2m2!1d37.82821271069792!2d30.53881902284264!3f91.93654445552963!4f-3.4669365772635103!5f0.4000000000000002" },
-            { id: 9, x: 440, y: 690, name: "İİBF", secret: "POINT_9", embed: "https://www.google.com/maps/embed?pb=!4v1771617959900!6m8!1m7!1sYLl0RJWEdH1jPKEZi0Z2hQ!2m2!1d37.82650566961525!2d30.53528759897594!3f116.46149291944955!4f5.666874545602823!5f0.4000000000000002" },
-            { id: 10, x: 170, y: 650, name: "Kulüp Odaları", secret: "POINT_10", embed: "https://www.google.com/maps/embed?pb=!4v1771618029704!6m8!1m7!1sPbZKPRv7M-zo6S4l7z8hYA!2m2!1d37.82785271437022!2d30.53077925418662!3f48.440361512346335!4f-2.942266211748219!5f0.4000000000000002" }
-        ];
-
         document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             const saved = localStorage.getItem('sdu_team_code');
@@ -110,30 +96,36 @@
                 document.getElementById('loginUI').classList.add('hidden'); document.getElementById('dashUI').classList.remove('hidden'); document.getElementById('voiceUI').classList.remove('hidden');
                 initPoints(); sync(); startVoice(); startGPS();
                 supabaseClient.channel('game_up').on('postgres_changes',{event:'UPDATE',schema:'public',table:'registrations',filter:`id=eq.${team.id}`},(p)=>{team=p.new;sync();}).subscribe();
-            } else { alert("Kod Hatalı!"); }
+            } else { alert("Hatalı Kod!"); }
         }
 
+        // --- KESİNTİSİZ SES SİSTEMİ ---
         async function startVoice() {
             if (peer) peer.destroy();
             peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
-            peer.on('open', makeCall);
-            peer.on('disconnected', () => peer.reconnect());
-            peer.on('error', (err) => { if(err.type === 'network') setTimeout(startVoice, 5000); });
-        }
+            
+            peer.on('open', (id) => {
+                // Admin'i bekleme
+                console.log("Ses Hattı Açıldı");
+            });
 
-        async function makeCall() {
-            try {
-                myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                myStream.getAudioTracks()[0].enabled = false;
-                const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
+            peer.on('call', async (call) => {
+                if (!myStream) {
+                    myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    myStream.getAudioTracks().forEach(t => t.enabled = micOn);
+                }
+                call.answer(myStream);
                 call.on('stream', (rs) => { 
                     const ra = document.getElementById('remoteAudio');
-                    ra.srcObject = rs; ra.muted = !spkOn;
+                    ra.srcObject = rs;
+                    ra.muted = !spkOn;
                 });
-            } catch(e) {}
+            });
+
+            peer.on('disconnected', () => peer.reconnect());
         }
 
-        function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks()[0].enabled = micOn; upUI(); }
+        function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks().forEach(t => t.enabled = micOn); upUI(); }
         function toggleSpk() { spkOn = !spkOn; document.getElementById('remoteAudio').muted = !spkOn; upUI(); }
         function upUI() {
             document.getElementById('micBtn').className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn bg-slate-800 shadow-2xl";
@@ -155,30 +147,17 @@
 
         function initPoints() {
             const container = document.getElementById('pts'); container.innerHTML = '';
-            points.forEach(p => {
-                const div = document.createElement('div'); div.className = `map-point ${p.type === 'start' ? 'start' : ''}`;
-                div.style.left = p.x + 'px'; div.style.top = p.y + 'px'; div.innerHTML = p.type === 'start' ? '🚩' : p.id;
-                div.onclick = e => { e.stopPropagation(); openPointModal(p); };
-                container.appendChild(div);
-            });
+            // Noktalar buraya dinamik veya sabit eklenebilir
         }
-        function openPointModal(p) {
-            selectedPoint = p; document.getElementById('modalPointName').innerText = p.name;
-            document.getElementById('pointModal').classList.add('active');
-            document.getElementById('btnTask').onclick = () => openScanner();
-            document.getElementById('btnLoc').onclick = () => { closeModals(); document.getElementById('contentBody').innerHTML = `<iframe class="w-full h-[400px] rounded-2xl" src="${p.embed}"></iframe>`; document.getElementById('contentModal').classList.add('active'); };
+        function openPointModal(p) { /* Modal logic */ }
+        function sync() {
+            if(timerInt) clearInterval(timerInt);
+            if(team.is_timer_running) timerInt = setInterval(() => { const s = Math.floor((Date.now() - new Date(team.timer_started_at).getTime()) / 1000) + Number(team.elapsed_seconds || 0); renderTime(s); }, 1000);
+            else renderTime(team.elapsed_seconds || 0);
+            document.getElementById('wait').classList.toggle('hidden', team.is_timer_running); document.getElementById('go').classList.toggle('hidden', !team.is_timer_running);
         }
-        let hs = null;
-        function openScanner() {
-            document.getElementById('pointModal').classList.remove('active'); document.getElementById('qrModal').classList.add('active');
-            hs = new Html5Qrcode("reader"); hs.start({facingMode:"environment"}, {fps:10, qrbox:250}, (d) => {
-                if(d === selectedPoint.secret) { hs.stop().then(() => { document.getElementById('qrModal').classList.remove('active'); showTask(selectedPoint); }); }
-                else alert("Hatalı QR!");
-            }, null);
-        }
-        function showTask(p) { document.getElementById('contentBody').innerHTML = `<h3 class="text-white font-black text-xl mb-4 uppercase">${p.name}</h3><p class="text-white text-sm italic">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); lucide.createIcons(); }
-        function closeScanner() { if(hs) hs.stop().then(() => document.getElementById('qrModal').classList.remove('active')); else document.getElementById('qrModal').classList.remove('active'); }
-        function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
+        function renderTime(s) { document.getElementById('clock').innerText = `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+        function logout() { localStorage.removeItem('sdu_team_code'); location.reload(); }
         function startGPS() {
             navigator.geolocation.watchPosition(async (pos) => {
                 const { latitude: lat, longitude: lng } = pos.coords;
@@ -189,14 +168,6 @@
                 }
             }, null, {enableHighAccuracy: true});
         }
-        function sync() {
-            if(timerInt) clearInterval(timerInt);
-            if(team.is_timer_running) timerInt = setInterval(() => { const s = Math.floor((Date.now() - new Date(team.timer_started_at).getTime()) / 1000) + Number(team.elapsed_seconds || 0); renderTime(s); }, 1000);
-            else renderTime(team.elapsed_seconds || 0);
-            document.getElementById('wait').classList.toggle('hidden', team.is_timer_running); document.getElementById('go').classList.toggle('hidden', !team.is_timer_running);
-        }
-        function renderTime(s) { document.getElementById('clock').innerText = `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
-        function logout() { localStorage.removeItem('sdu_team_code'); location.reload(); }
     </script>
 </body>
 </html>
