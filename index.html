@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Yarışmacı Portalı | SDÜ Oryantiring</title>
+    <title>Yarışmacı | SDÜ Oryantiring</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,26 +11,22 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; -webkit-user-select: none; }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .digital { font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px #9b1c31; }
         #mapLayer { position: fixed; inset: 0; z-index: 100; background: #000; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
         #mapLayer.open { transform: translateY(0); }
         #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
         #canvas { position: absolute; transform-origin: center center; will-change: transform; pointer-events: auto; }
-        .map-point { position: absolute; width: 44px; height: 44px; background: #9b1c31; border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; transform: translate(-50%, -50%); z-index: 50; cursor: pointer; box-shadow: 0 0 25px rgba(155, 28, 49, 0.7); }
-        .map-point.start { background: #2563eb; }
+        .map-point { position: absolute; width: 44px; height: 44px; background: #9b1c31; border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; transform: translate(-50%, -50%); z-index: 50; box-shadow: 0 0 25px rgba(155, 28, 49, 0.7); }
         .zoom-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 120; }
-        .zoom-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; transition: all 0.2s; }
-        .zoom-btn:active { transform: scale(0.9); }
+        .zoom-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
         .control-btn { transition: all 0.3s; width: 64px; height: 64px; border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; border: 2.5px solid rgba(255,255,255,0.1); }
         .btn-active { background: #ef4444 !important; animation: pulse-btn 1.5s infinite; }
-        .btn-muted { background: rgba(30, 41, 59, 0.95); }
         @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
-        .st-view-iframe { width: 100%; height: 380px; border-radius: 2rem; border: none; }
-        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; flex-direction: column; items-center; justify-content: center; transition: opacity 0.5s; }
+        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; items-center; justify-content: center; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center">
@@ -40,8 +36,7 @@
 
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
         <div class="max-w-md w-full glass p-10 rounded-[3rem] border-t-4 border-red-700 shadow-2xl">
-            <img src="https://r.resimlink.com/p5fEz.png" class="w-24 mx-auto mb-6">
-            <h1 class="text-3xl font-black uppercase mb-10 tracking-tighter">GİRİŞ</h1>
+            <h1 class="text-3xl font-black uppercase mb-10">YARIŞMACI</h1>
             <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-6 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6 focus:border-red-600 transition-all">
             <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">BAĞLAN</button>
         </div>
@@ -53,12 +48,9 @@
                 <div class="absolute top-0 left-0 w-1.5 h-full bg-red-700"></div>
                 <h2 id="teamN" class="text-xs font-black uppercase truncate pr-6 text-left">---</h2>
                 <div class="flex items-center gap-2 mt-2"><div id="gpsStatus" class="w-2 h-2 bg-slate-600 rounded-full"></div><p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">GPS Bekleniyor</p></div>
-                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
             </div>
-            <div class="flex-1 glass rounded-2xl p-5 text-center border-b-4 border-red-700">
-                <div id="clock" class="text-3xl font-black digital">00:00:00</div>
-                <p class="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1 text-center">YARIŞMA SÜRESİ</p>
-            </div>
+            <div class="flex-1 glass rounded-2xl p-5 text-center border-b-4 border-red-700"><div id="clock" class="text-3xl font-black digital">00:00:00</div><p class="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1 text-center">SÜRE</p></div>
         </div>
         <div class="flex-1 glass rounded-[3rem] flex flex-col items-center justify-center text-center p-8 border border-white/5 relative overflow-hidden">
             <div id="wait" class="space-y-6"><i data-lucide="timer" class="w-12 h-12 text-slate-700 animate-pulse mx-auto"></i><h4 class="text-xl font-black uppercase text-slate-400">BEKLEYİN</h4></div>
@@ -67,38 +59,18 @@
     </div>
 
     <div id="voiceUI" class="hidden fixed bottom-10 right-10 z-[150] flex flex-col gap-5">
-        <button id="spkBtn" onclick="toggleSpk()" class="control-btn btn-muted shadow-3xl"><i data-lucide="volume-x" id="spkIcon" class="text-white w-8 h-8"></i></button>
-        <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted shadow-3xl"><i data-lucide="mic-off" id="micIcon" class="text-white w-8 h-8"></i></button>
+        <button id="spkBtn" onclick="toggleSpk()" class="control-btn bg-slate-800 shadow-3xl"><i data-lucide="volume-x" id="spkIcon" class="text-white"></i></button>
+        <button id="micBtn" onclick="toggleMic()" class="control-btn bg-slate-800 shadow-3xl"><i data-lucide="mic-off" id="micIcon" class="text-white"></i></button>
     </div>
 
     <div id="mapLayer">
-        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/70 text-white">
-            <div class="flex items-center gap-3"><i data-lucide="navigation" class="w-5 h-5 text-red-500"></i><h2 class="font-black text-xs uppercase tracking-widest">DİJİTAL HARİTA</h2></div>
-            <button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl"><i data-lucide="chevron-down"></i></button>
-        </div>
-        <div id="vp">
-            <div class="zoom-controls">
-                <button onclick="zoom(1.5)" class="zoom-btn"><i data-lucide="plus"></i></button>
-                <button onclick="resetM()" class="zoom-btn"><i data-lucide="maximize-2"></i></button>
-                <button onclick="zoom(0.6)" class="zoom-btn"><i data-lucide="minus"></i></button>
-            </div>
-            <div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none"><div id="pts" class="pointer-events-auto"></div></div>
-        </div>
+        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/70 text-white"><h2 class="font-black text-xs uppercase tracking-widest">DİJİTAL HARİTA</h2><button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl"><i data-lucide="chevron-down"></i></button></div>
+        <div id="vp"><div class="zoom-controls"><button onclick="zoom(1.5)" class="zoom-btn"><i data-lucide="plus"></i></button><button onclick="resetM()" class="zoom-btn"><i data-lucide="maximize-2"></i></button><button onclick="zoom(0.6)" class="zoom-btn"><i data-lucide="minus"></i></button></div><div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none"><div id="pts" class="pointer-events-auto"></div></div></div>
     </div>
 
-    <div id="pointModal" class="modal-overlay text-white">
-        <div class="glass w-full max-w-sm p-10 rounded-[3.5rem] text-center space-y-8">
-            <h3 id="modalPointName" class="text-xl font-black uppercase tracking-tighter">---</h3>
-            <div class="space-y-4">
-                <button id="btnTask" class="w-full py-6 bg-red-700 text-white rounded-3xl font-black text-xs uppercase shadow-xl flex items-center justify-center gap-3 active:scale-95"><i data-lucide="qr-code"></i> QR OKUT</button>
-                <button id="btnLoc" class="w-full py-6 glass border border-white/10 rounded-3xl text-xs uppercase font-bold flex items-center justify-center gap-3"><i data-lucide="eye"></i> KONUMU GÖR</button>
-                <button onclick="closeModals()" class="w-full py-2 text-slate-500 uppercase font-black text-[10px]">KAPAT</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[3rem] text-center border-t-4 border-red-700 shadow-3xl"><h3 class="text-xs font-black mb-6 uppercase tracking-widest">QR OKUTUN</h3><div id="reader" class="rounded-3xl overflow-hidden border-4 border-black"></div><button onclick="closeScanner()" class="mt-8 w-full py-5 glass border border-red-900/30 text-red-500 font-bold uppercase text-xs rounded-2xl">VAZGEÇ</button></div></div>
-    <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-8 rounded-[3.5rem] text-center relative border-t-4 border-emerald-500 shadow-3xl"><button onclick="closeModals()" class="absolute top-6 right-6 text-slate-500"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-6"></div></div></div>
+    <div id="pointModal" class="modal-overlay text-white"><div class="glass w-full max-w-sm p-10 rounded-[3.5rem] text-center space-y-8"><h3 id="modalPointName" class="text-xl font-black uppercase tracking-tighter">---</h3><div class="space-y-4"><button id="btnTask" class="w-full py-6 bg-red-700 text-white rounded-3xl font-black text-xs uppercase flex items-center justify-center gap-3"><i data-lucide="qr-code"></i> QR OKUT</button><button id="btnLoc" class="w-full py-6 glass border border-white/10 rounded-3xl text-xs font-bold flex items-center justify-center gap-3"><i data-lucide="eye"></i> KONUM</button><button onclick="closeModals()" class="w-full py-2 text-slate-500 uppercase font-black text-[10px]">KAPAT</button></div></div></div>
+    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[3rem] text-center border-t-4 border-red-700 shadow-3xl"><div id="reader" class="rounded-3xl overflow-hidden"></div><button onclick="closeScanner()" class="mt-8 w-full py-5 text-red-500 font-bold uppercase text-xs">VAZGEÇ</button></div></div>
+    <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-8 rounded-[3.5rem] relative border-t-4 border-emerald-500 shadow-3xl text-center"><button onclick="closeModals()" class="absolute top-6 right-6 text-slate-500"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-6"></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://hxdmiamcednlzoklkxnu.supabase.co';
@@ -126,8 +98,7 @@
             lucide.createIcons();
             const saved = localStorage.getItem('sdu_team_code');
             if(saved) { document.getElementById('codeIn').value = saved; await login(); }
-            document.getElementById('loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            document.getElementById('loader').style.opacity = '0'; setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
         });
 
         async function login() {
@@ -138,23 +109,15 @@
                 document.getElementById('teamN').innerText = team.team_name;
                 document.getElementById('loginUI').classList.add('hidden'); document.getElementById('dashUI').classList.remove('hidden'); document.getElementById('voiceUI').classList.remove('hidden');
                 initPoints(); sync(); startVoice(); startGPS();
-                supabaseClient.channel('game_up').on('postgres_changes', {event:'UPDATE', schema:'public', table:'registrations', filter:`id=eq.${team.id}`}, (p) => { team = p.new; sync(); }).subscribe();
-            } else { alert("Kod Hatalı!"); localStorage.removeItem('sdu_team_code'); }
+                supabaseClient.channel('game_up').on('postgres_changes',{event:'UPDATE',schema:'public',table:'registrations',filter:`id=eq.${team.id}`},(p)=>{team=p.new;sync();}).subscribe();
+            } else { alert("Kod Hatalı!"); }
         }
 
-        // --- KESİNTİSİZ SES SİSTEMİ ---
         async function startVoice() {
             if (peer) peer.destroy();
             peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
-            
-            peer.on('open', (id) => {
-                console.log('Ses Hattı Hazır:', id);
-                // Canlı tutma sinyali
-                setInterval(() => { if(peer.socket && peer.socket._open) peer.socket.send({type: 'HEARTBEAT'}); }, 20000);
-                makeCall();
-            });
-
-            peer.on('disconnected', () => { peer.reconnect(); });
+            peer.on('open', makeCall);
+            peer.on('disconnected', () => peer.reconnect());
             peer.on('error', (err) => { if(err.type === 'network') setTimeout(startVoice, 5000); });
         }
 
@@ -165,23 +128,22 @@
                 const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
                 call.on('stream', (rs) => { 
                     const ra = document.getElementById('remoteAudio');
-                    ra.srcObject = rs;
-                    ra.muted = !spkOn;
+                    ra.srcObject = rs; ra.muted = !spkOn;
                 });
-            } catch(e) { console.error("Mic access denied"); }
+            } catch(e) {}
         }
 
         function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks()[0].enabled = micOn; upUI(); }
         function toggleSpk() { spkOn = !spkOn; document.getElementById('remoteAudio').muted = !spkOn; upUI(); }
         function upUI() {
-            document.getElementById('micBtn').className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl";
+            document.getElementById('micBtn').className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn bg-slate-800 shadow-2xl";
             document.getElementById('micIcon').setAttribute('data-lucide', micOn ? 'mic' : 'mic-off');
-            document.getElementById('spkBtn').className = spkOn ? "control-btn btn-active shadow-2xl" : "control-btn btn-muted shadow-2xl";
+            document.getElementById('spkBtn').className = spkOn ? "control-btn btn-active shadow-2xl" : "control-btn bg-slate-800 shadow-2xl";
             document.getElementById('spkIcon').setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
             lucide.createIcons();
         }
 
-        const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
+        const vp=document.getElementById('vp'),cv=document.getElementById('canvas'),mi=document.getElementById('mImg');
         mi.onload = resetM; window.onresize = resetM;
         function upd() { cv.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`; }
         function zoom(f) { sc = Math.max(minSc, Math.min(6, sc * f)); upd(); }
@@ -189,23 +151,22 @@
         function setMap(b) { document.getElementById('mapLayer').classList.toggle('open', b); if(b) setTimeout(resetM, 150); }
         vp.onpointerdown = e => { isD = true; sx = e.clientX-tx; sy = e.clientY-ty; vp.setPointerCapture(e.pointerId); };
         window.onpointermove = e => { if(isD) { tx = e.clientX-sx; ty = e.clientY-sy; upd(); } };
-        window.onpointerup = e => { isD = false; vp.releasePointerCapture(e.pointerId); };
+        window.onpointerup = e => { isD = false; };
 
         function initPoints() {
             const container = document.getElementById('pts'); container.innerHTML = '';
             points.forEach(p => {
                 const div = document.createElement('div'); div.className = `map-point ${p.type === 'start' ? 'start' : ''}`;
-                div.style.left = p.x + 'px'; div.style.top = p.y + 'px'; div.innerHTML = p.type === 'start' ? '<i data-lucide="flag" class="w-4 h-4 text-white"></i>' : p.id;
-                div.onpointerdown = e => e.stopPropagation(); div.onclick = e => { e.stopPropagation(); openPointModal(p); };
+                div.style.left = p.x + 'px'; div.style.top = p.y + 'px'; div.innerHTML = p.type === 'start' ? '🚩' : p.id;
+                div.onclick = e => { e.stopPropagation(); openPointModal(p); };
                 container.appendChild(div);
             });
-            lucide.createIcons();
         }
         function openPointModal(p) {
             selectedPoint = p; document.getElementById('modalPointName').innerText = p.name;
             document.getElementById('pointModal').classList.add('active');
             document.getElementById('btnTask').onclick = () => openScanner();
-            document.getElementById('btnLoc').onclick = () => { closeModals(); document.getElementById('contentBody').innerHTML = `<iframe class="st-view-iframe" src="${p.embed}"></iframe>`; document.getElementById('contentModal').classList.add('active'); };
+            document.getElementById('btnLoc').onclick = () => { closeModals(); document.getElementById('contentBody').innerHTML = `<iframe class="w-full h-[400px] rounded-2xl" src="${p.embed}"></iframe>`; document.getElementById('contentModal').classList.add('active'); };
         }
         let hs = null;
         function openScanner() {
@@ -215,7 +176,7 @@
                 else alert("Hatalı QR!");
             }, null);
         }
-        function showTask(p) { document.getElementById('contentBody').innerHTML = `<div class="p-8 bg-emerald-500/10 rounded-[3rem] border border-emerald-500/20 text-left"><h3 class="text-white font-black text-xl mb-4 uppercase">${p.name}</h3><p class="text-white text-sm italic">${p.task}</p></div>`; document.getElementById('contentModal').classList.add('active'); lucide.createIcons(); }
+        function showTask(p) { document.getElementById('contentBody').innerHTML = `<h3 class="text-white font-black text-xl mb-4 uppercase">${p.name}</h3><p class="text-white text-sm italic">${p.task}</p>`; document.getElementById('contentModal').classList.add('active'); lucide.createIcons(); }
         function closeScanner() { if(hs) hs.stop().then(() => document.getElementById('qrModal').classList.remove('active')); else document.getElementById('qrModal').classList.remove('active'); }
         function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
         function startGPS() {
