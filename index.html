@@ -10,67 +10,62 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: white; margin: 0; overflow: hidden; height: 100vh; touch-action: none; }
         .glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .digital { font-family: 'JetBrains Mono', monospace; text-shadow: 0 0 10px #9b1c31; }
-        #mapLayer { position: fixed; inset: 0; z-index: 100; background: #000; transform: translateY(100%); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
-        #mapLayer.open { transform: translateY(0); }
         #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
         #canvas { position: absolute; transform-origin: center center; will-change: transform; pointer-events: auto; }
-        .map-point { position: absolute; width: 44px; height: 44px; background: #9b1c31; border: 3px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; transform: translate(-50%, -50%); z-index: 50; box-shadow: 0 0 25px rgba(155, 28, 49, 0.7); }
         .zoom-controls { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 12px; z-index: 120; }
         .zoom-btn { width: 50px; height: 50px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
-        .control-btn { transition: all 0.3s; width: 64px; height: 64px; border-radius: 1.5rem; display: flex; align-items: center; justify-content: center; border: 2.5px solid rgba(255,255,255,0.1); }
         .btn-active { background: #ef4444 !important; animation: pulse-btn 1.5s infinite; }
         @keyframes pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1.5rem; }
         .modal-overlay.active { display: flex; }
-        #loader { position: fixed; inset: 0; z-index: 500; background: #020617; display: flex; items-center; justify-content: center; }
+        #voiceEnabler { position: fixed; inset: 0; z-index: 1000; background: rgba(2, 6, 23, 0.95); display: flex; flex-direction: column; items-center; justify-content: center; text-align: center; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center">
 
-    <div id="loader"><div class="w-12 h-12 border-4 border-red-700 border-t-transparent rounded-full animate-spin"></div></div>
     <audio id="remoteAudio" autoplay class="hidden"></audio>
 
-    <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
+    <!-- SES AKTİFLEŞTİRİCİ (TARAYICI ENGELİNİ AŞMAK İÇİN) -->
+    <div id="voiceEnabler">
+        <div class="glass p-10 rounded-[3rem] border-t-4 border-emerald-500 shadow-2xl">
+            <div class="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="radio" class="text-emerald-500 w-10 h-10"></i></div>
+            <h2 class="text-xl font-black mb-4 uppercase">SİSTEME BAĞLANILIYOR</h2>
+            <p class="text-xs text-slate-400 mb-8 max-w-[250px] mx-auto">Telsiz ve Takip sistemini başlatmak için butona tıklayın.</p>
+            <button onclick="startFullSystem()" class="px-10 py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all">SİSTEMİ AÇ</button>
+        </div>
+    </div>
+
+    <div id="loginUI" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
         <div class="max-w-md w-full glass p-10 rounded-[3rem] border-t-4 border-red-700 shadow-2xl">
-            <h1 class="text-3xl font-black uppercase mb-10 tracking-tighter">YARIŞMACI PORTALI</h1>
-            <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-6 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6 focus:border-red-600 transition-all">
-            <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">SİSTEME BAĞLAN</button>
+            <h1 class="text-3xl font-black uppercase mb-10">GİRİŞ</h1>
+            <input type="text" id="codeIn" placeholder="TAKIM KODU" class="w-full bg-black/40 border border-white/10 rounded-2xl py-6 px-6 text-center text-3xl font-black outline-none uppercase text-red-500 mb-6">
+            <button onclick="login()" class="w-full py-6 bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">BAĞLAN</button>
         </div>
     </div>
 
     <div id="dashUI" class="hidden w-full h-full flex flex-col p-4 space-y-4">
-        <div class="flex justify-between gap-3">
-            <div class="flex-1 glass rounded-2xl p-5 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1.5 h-full bg-red-700"></div>
-                <h2 id="teamN" class="text-xs font-black uppercase truncate pr-6 text-left">---</h2>
-                <div class="flex items-center gap-2 mt-2"><div id="gpsStatus" class="w-2 h-2 bg-slate-600 rounded-full"></div><p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">GPS Bekleniyor</p></div>
-                <button onclick="logout()" class="absolute top-5 right-5 text-slate-500 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
-            </div>
-            <div class="flex-1 glass rounded-2xl p-5 text-center border-b-4 border-red-700"><div id="clock" class="text-3xl font-black digital">00:00:00</div><p class="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1 text-center">SÜRE</p></div>
+        <div class="flex justify-between gap-3 text-center">
+            <div class="flex-1 glass rounded-2xl p-5 relative overflow-hidden"><h2 id="teamN" class="text-xs font-black uppercase truncate text-left">---</h2><div class="flex items-center gap-2 mt-2"><div id="gpsStatus" class="w-2 h-2 bg-slate-600 rounded-full"></div><p id="gpsText" class="text-[9px] font-bold text-slate-500 uppercase">GPS</p></div></div>
+            <div class="flex-1 glass rounded-2xl p-5 border-b-4 border-red-700 font-mono text-2xl font-black" id="clock">00:00:00</div>
         </div>
-        <div class="flex-1 glass rounded-[3rem] flex flex-col items-center justify-center text-center p-8 border border-white/5 relative overflow-hidden">
+        <div class="flex-1 glass rounded-[3rem] flex flex-col items-center justify-center text-center p-8 border border-white/5 relative">
             <div id="wait" class="space-y-6"><i data-lucide="timer" class="w-12 h-12 text-slate-700 animate-pulse mx-auto"></i><h4 class="text-xl font-black uppercase text-slate-400">BEKLEYİN</h4></div>
             <div id="go" class="hidden space-y-10"><i data-lucide="map" class="text-red-600 w-12 h-12 mx-auto animate-pulse"></i><button onclick="setMap(true)" class="px-16 py-6 bg-red-700 rounded-2xl font-black uppercase text-sm tracking-[0.3em] text-white shadow-2xl">HARİTAYI AÇ</button></div>
         </div>
     </div>
 
     <div id="voiceUI" class="hidden fixed bottom-10 right-10 z-[150] flex flex-col gap-5">
-        <button id="spkBtn" onclick="toggleSpk()" class="control-btn bg-slate-800 shadow-3xl"><i data-lucide="volume-x" id="spkIcon" class="text-white"></i></button>
-        <button id="micBtn" onclick="toggleMic()" class="control-btn bg-slate-800 shadow-3xl"><i data-lucide="mic-off" id="micIcon" class="text-white"></i></button>
+        <button id="spkBtn" onclick="toggleSpk()" class="w-16 h-16 rounded-2xl glass flex items-center justify-center border-2 border-white/10 shadow-3xl"><i data-lucide="volume-x" id="spkIcon"></i></button>
+        <button id="micBtn" onclick="toggleMic()" class="w-16 h-16 rounded-2xl glass flex items-center justify-center border-2 border-white/10 shadow-3xl"><i data-lucide="mic-off" id="micIcon"></i></button>
     </div>
 
-    <div id="mapLayer">
-        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/70 text-white"><h2 class="font-black text-xs uppercase tracking-widest">DİJİTAL HARİTA</h2><button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl"><i data-lucide="chevron-down"></i></button></div>
+    <div id="mapLayer" class="fixed inset-0 z-[100] bg-black translate-y-full transition-transform duration-500 flex flex-col">
+        <div class="p-6 flex justify-between items-center glass border-none bg-slate-900/70 text-white"><h2 class="font-black text-xs uppercase tracking-widest">SAHA HARİTASI</h2><button onclick="setMap(false)" class="p-4 bg-white/5 rounded-2xl"><i data-lucide="chevron-down"></i></button></div>
         <div id="vp"><div class="zoom-controls"><button onclick="zoom(1.5)" class="zoom-btn"><i data-lucide="plus"></i></button><button onclick="resetM()" class="zoom-btn"><i data-lucide="maximize-2"></i></button><button onclick="zoom(0.6)" class="zoom-btn"><i data-lucide="minus"></i></button></div><div id="canvas"><img id="mImg" src="https://hxdmiamcednlzoklkxnu.supabase.co/storage/v1/object/public/map/map.png" class="pointer-events-none"><div id="pts" class="pointer-events-auto"></div></div></div>
     </div>
-
-    <div id="pointModal" class="modal-overlay text-white"><div class="glass w-full max-w-sm p-10 rounded-[3.5rem] text-center space-y-8"><h3 id="modalPointName" class="text-xl font-black uppercase tracking-tighter">---</h3><div class="space-y-4"><button id="btnTask" class="w-full py-6 bg-red-700 text-white rounded-3xl font-black text-xs uppercase flex items-center justify-center gap-3"><i data-lucide="qr-code"></i> QR OKUT</button><button id="btnLoc" class="w-full py-6 glass border border-white/10 rounded-3xl text-xs font-bold flex items-center justify-center gap-3"><i data-lucide="eye"></i> KONUM</button><button onclick="closeModals()" class="w-full py-2 text-slate-500 uppercase font-black text-[10px]">KAPAT</button></div></div></div>
-    <div id="qrModal" class="modal-overlay text-white"><div class="glass w-full max-w-md p-6 rounded-[3rem] text-center border-t-4 border-red-700 shadow-3xl"><div id="reader" class="rounded-3xl overflow-hidden"></div><button onclick="closeScanner()" class="mt-8 w-full py-5 text-red-500 font-bold uppercase text-xs">VAZGEÇ</button></div></div>
-    <div id="contentModal" class="modal-overlay text-white"><div class="glass w-full max-w-lg p-8 rounded-[3.5rem] relative border-t-4 border-emerald-500 shadow-3xl text-center"><button onclick="closeModals()" class="absolute top-6 right-6 text-slate-500"><i data-lucide="x"></i></button><div id="contentBody" class="mt-4 space-y-6"></div></div></div>
 
     <script>
         const SUPABASE_URL = 'https://hxdmiamcednlzoklkxnu.supabase.co';
@@ -80,12 +75,13 @@
         let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, lastLat = null, lastLng = null;
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        function startFullSystem() {
+            document.getElementById('voiceEnabler').classList.add('hidden');
+            document.getElementById('loginUI').classList.remove('hidden');
             lucide.createIcons();
             const saved = localStorage.getItem('sdu_team_code');
-            if(saved) { document.getElementById('codeIn').value = saved; await login(); }
-            document.getElementById('loader').style.opacity = '0'; setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        });
+            if(saved) { document.getElementById('codeIn').value = saved; login(); }
+        }
 
         async function login() {
             const c = document.getElementById('codeIn').value.trim().toUpperCase(); if(!c) return;
@@ -94,19 +90,18 @@
                 team = data; localStorage.setItem('sdu_team_code', c);
                 document.getElementById('teamN').innerText = team.team_name;
                 document.getElementById('loginUI').classList.add('hidden'); document.getElementById('dashUI').classList.remove('hidden'); document.getElementById('voiceUI').classList.remove('hidden');
-                initPoints(); sync(); startVoice(); startGPS();
+                sync(); startVoice(); startGPS();
                 supabaseClient.channel('game_up').on('postgres_changes',{event:'UPDATE',schema:'public',table:'registrations',filter:`id=eq.${team.id}`},(p)=>{team=p.new;sync();}).subscribe();
-            } else { alert("Hatalı Kod!"); }
+            } else alert("Kod Hatalı!");
         }
 
-        // --- KESİNTİSİZ SES SİSTEMİ ---
         async function startVoice() {
             if (peer) peer.destroy();
             peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
             
             peer.on('open', (id) => {
-                // Admin'i bekleme
-                console.log("Ses Hattı Açıldı");
+                // Admin'i bekleme: Admin arayacak veya biz Admin'e kendimizi tanıtacağız
+                // Ancak bu modelde Admin santral olduğu için Admin'in bizi "beklemesi" yeterli
             });
 
             peer.on('call', async (call) => {
@@ -117,20 +112,18 @@
                 call.answer(myStream);
                 call.on('stream', (rs) => { 
                     const ra = document.getElementById('remoteAudio');
-                    ra.srcObject = rs;
-                    ra.muted = !spkOn;
+                    ra.srcObject = rs; ra.muted = !spkOn;
                 });
             });
-
             peer.on('disconnected', () => peer.reconnect());
         }
 
         function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks().forEach(t => t.enabled = micOn); upUI(); }
         function toggleSpk() { spkOn = !spkOn; document.getElementById('remoteAudio').muted = !spkOn; upUI(); }
         function upUI() {
-            document.getElementById('micBtn').className = micOn ? "control-btn btn-active shadow-2xl" : "control-btn bg-slate-800 shadow-2xl";
+            document.getElementById('micBtn').className = micOn ? "w-16 h-16 rounded-2xl mic-active flex items-center justify-center shadow-3xl" : "w-16 h-16 rounded-2xl glass flex items-center justify-center border-2 border-white/10";
             document.getElementById('micIcon').setAttribute('data-lucide', micOn ? 'mic' : 'mic-off');
-            document.getElementById('spkBtn').className = spkOn ? "control-btn btn-active shadow-2xl" : "control-btn bg-slate-800 shadow-2xl";
+            document.getElementById('spkBtn').className = spkOn ? "w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-3xl" : "w-16 h-16 rounded-2xl glass flex items-center justify-center border-2 border-white/10";
             document.getElementById('spkIcon').setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
             lucide.createIcons();
         }
@@ -140,16 +133,10 @@
         function upd() { cv.style.transform = `translate(${tx}px, ${ty}px) scale(${sc})`; }
         function zoom(f) { sc = Math.max(minSc, Math.min(6, sc * f)); upd(); }
         function resetM() { if(!mi.naturalWidth) return; minSc = Math.min(vp.clientWidth/mi.naturalWidth, vp.clientHeight/mi.naturalHeight); sc = minSc; tx = 0; ty = 0; upd(); }
-        function setMap(b) { document.getElementById('mapLayer').classList.toggle('open', b); if(b) setTimeout(resetM, 150); }
+        function setMap(b) { document.getElementById('mapLayer').classList.toggle('translate-y-full', !b); document.getElementById('mapLayer').classList.toggle('translate-y-0', b); if(b) setTimeout(resetM, 150); }
         vp.onpointerdown = e => { isD = true; sx = e.clientX-tx; sy = e.clientY-ty; vp.setPointerCapture(e.pointerId); };
         window.onpointermove = e => { if(isD) { tx = e.clientX-sx; ty = e.clientY-sy; upd(); } };
         window.onpointerup = e => { isD = false; };
-
-        function initPoints() {
-            const container = document.getElementById('pts'); container.innerHTML = '';
-            // Noktalar buraya dinamik veya sabit eklenebilir
-        }
-        function openPointModal(p) { /* Modal logic */ }
         function sync() {
             if(timerInt) clearInterval(timerInt);
             if(team.is_timer_running) timerInt = setInterval(() => { const s = Math.floor((Date.now() - new Date(team.timer_started_at).getTime()) / 1000) + Number(team.elapsed_seconds || 0); renderTime(s); }, 1000);
@@ -157,17 +144,7 @@
             document.getElementById('wait').classList.toggle('hidden', team.is_timer_running); document.getElementById('go').classList.toggle('hidden', !team.is_timer_running);
         }
         function renderTime(s) { document.getElementById('clock').innerText = `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
-        function logout() { localStorage.removeItem('sdu_team_code'); location.reload(); }
-        function startGPS() {
-            navigator.geolocation.watchPosition(async (pos) => {
-                const { latitude: lat, longitude: lng } = pos.coords;
-                if(team.is_timer_running) {
-                    const dist = lastLat ? Math.sqrt(Math.pow(lat-lastLat,2)+Math.pow(lng-lastLng,2)) : 1;
-                    if(dist > 0.0001) { lastLat = lat; lastLng = lng; const hist = [...(team.path_history || []), {lat, lng, time: new Date().toISOString()}].slice(-100);
-                        await supabaseClient.from('registrations').update({last_lat:lat, last_lng:lng, path_history:hist}).eq('id', team.id); }
-                }
-            }, null, {enableHighAccuracy: true});
-        }
+        function startGPS() { navigator.geolocation.watchPosition(async (pos) => { if(team.is_timer_running) { const {latitude:lat, longitude:lng} = pos.coords; await supabaseClient.from('registrations').update({last_lat:lat, last_lng:lng}).eq('id', team.id); }}, null, {enableHighAccuracy: true}); }
     </script>
 </body>
 </html>
