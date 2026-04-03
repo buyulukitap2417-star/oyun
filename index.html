@@ -337,7 +337,7 @@
                 // Noktalar direkt olarak görselin orijinal piksellerine yerleşir
                 div.style.left = p.x + 'px'; 
                 div.style.top = p.y + 'px';
-                div.innerHTML = p.type === 'start' ? '<i data-lucide="flag" class="w-4 h-4 text-white"></i>' : p.id;
+                div.innerHTML = p.type === 'start' ? '<i data-lucide="flag" class="w-5 h-5 text-white"></i>' : '<i data-lucide="map-pin" class="w-5 h-5 text-white"></i>';
                 div.onpointerdown = e => e.stopPropagation(); // Haritayı kaydırmayı engeller
                 div.onclick = e => { e.stopPropagation(); openPointModal(p); };
                 container.appendChild(div);
