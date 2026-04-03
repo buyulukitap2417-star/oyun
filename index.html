@@ -142,6 +142,7 @@
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
+        let callRetryTimeout = null;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, selectedPoint = null, lastLat = null, lastLng = null;
 
         const points = [
@@ -158,13 +159,13 @@
             { id: 10, x: 170, y: 650, name: "Kulüp Odaları", secret: "POINT_10", embed: "https://www.google.com/maps/embed?pb=!4v1771618029704!6m8!1m7!1sPbZKPRv7M-zo6S4l7z8hYA!2m2!1d37.82785271437022!2d30.53077925418662!3f48.440361512346335!4f-2.942266211748219!5f0.4000000000000002" }
         ];
 
-        window.onload = async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             lucide.createIcons();
             const savedCode = localStorage.getItem('sdu_team_code');
             if(savedCode) { document.getElementById('codeIn').value = savedCode; await login(); }
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        };
+        });
 
         async function login() {
             const code = document.getElementById('codeIn').value.trim().toUpperCase();
@@ -181,23 +182,53 @@
             } else { alert("Takım Kodu Hatalı!"); localStorage.removeItem('sdu_team_code'); }
         }
 
+        // --- OTO-ŞİFA ÖZELLİKLİ SES SİSTEMİ ---
         async function startVoice() {
-            if (peer) { peer.destroy(); }
-            peer = new Peer('SDU_TEAM_' + team.id.substring(0,8));
+            if (peer) { peer.disconnect(); peer.destroy(); }
+            peer = new Peer('SDU_TEAM_' + team.id.substring(0,8), {
+                config: { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
+            });
             
             peer.on('open', async () => {
                 try {
                     myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                     myStream.getAudioTracks()[0].enabled = micOn;
-                    const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
-                    call.on('stream', (rs) => { 
-                        const ra = document.getElementById('remoteAudio');
-                        ra.srcObject = rs; ra.muted = !spkOn; 
-                    });
+                    makeCall();
                 } catch(e) { console.error("Mic error"); }
             });
 
-            peer.on('disconnected', () => peer.reconnect());
+            peer.on('disconnected', () => { if(!peer.destroyed) peer.reconnect(); });
+        }
+
+        function makeCall() {
+            if (!myStream || !peer || !peer.open) return;
+            const call = peer.call('SDU_ADMIN_2026_VOICE', myStream);
+            if(!call) return;
+
+            call.on('stream', (rs) => { 
+                const ra = document.getElementById('remoteAudio');
+                ra.srcObject = rs; ra.muted = !spkOn; 
+            });
+
+            call.on('close', () => {
+                clearTimeout(callRetryTimeout);
+                callRetryTimeout = setTimeout(makeCall, 3000); 
+            });
+
+            call.on('error', () => {
+                clearTimeout(callRetryTimeout);
+                callRetryTimeout = setTimeout(makeCall, 3000);
+            });
+
+            // 5-10 dk Timeout Koruyucu: WebRTC koptuğunda sessizce yeniden arar
+            if(call.peerConnection) {
+                call.peerConnection.addEventListener('iceconnectionstatechange', () => {
+                    const state = call.peerConnection.iceConnectionState;
+                    if(state === 'disconnected' || state === 'failed' || state === 'closed') {
+                        call.close(); // Close tetiklenir, 3sn sonra tekrar arar
+                    }
+                });
+            }
         }
 
         function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks()[0].enabled = micOn; upVoiceUI(); }
