@@ -20,7 +20,6 @@
         
         #vp { width: 100%; flex-grow: 1; overflow: hidden; position: relative; background: #000; display: flex; align-items: center; justify-content: center; touch-action: none; }
         
-        /* CANVAS VE HARİTA DÜZENLEMESİ */
         #canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; pointer-events: auto; }
         #mImg { max-width: none !important; display: block; pointer-events: none; }
         
@@ -49,7 +48,6 @@
         <p class="text-[10px] font-bold uppercase tracking-[0.4em] text-slate-500">Sistem Hazırlanıyor</p>
     </div>
 
-    <!-- SES OYNATICI -->
     <audio id="remoteAudio" autoplay class="hidden"></audio>
 
     <div id="loginUI" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-950 px-6 text-white text-center">
@@ -91,7 +89,6 @@
         </div>
     </div>
 
-    <!-- SES BUTONLARI -->
     <div id="voiceUI" class="hidden fixed bottom-10 right-10 z-[150] flex flex-col gap-5">
         <button id="spkBtn" onclick="toggleSpk()" class="control-btn btn-muted shadow-3xl"><i data-lucide="volume-x" id="spkIcon" class="text-white w-8 h-8"></i></button>
         <button id="micBtn" onclick="toggleMic()" class="control-btn btn-muted shadow-3xl"><i data-lucide="mic-off" id="micIcon" class="text-white w-8 h-8"></i></button>
@@ -149,8 +146,8 @@
         let team = null, timerInt = null, peer = null, myStream = null, micOn = false, spkOn = false;
         let callRetryTimeout = null;
         let sc = 1, minSc = 1, tx = 0, ty = 0, isD = false, sx, sy, selectedPoint = null, lastLat = null, lastLng = null;
+        let adminDataConn = null;
 
-        // HARİTA GÖREVLERİ VE BİLMECELER EKLENDİ
         const points = [
             { id: 0, x: 475, y: 320, name: "Eğitim Fakültesi", type: "start", secret: "START_POINT", embed: "https://www.google.com/maps/embed?pb=!4v1771617689736!6m8!1m7!1sRO-U8WGElZ3Py_Ecp1CKBA!2m2!1d37.83084480198436!2d30.53590397797262!3f158.10045157168938!4f-0.05794305684364076!5f0.4000000000000002", task: "Yarışmaya hoş geldiniz! Hedefinizi haritadan seçin ve bu gizemli kampüs macerasına hemen başlayın." },
             { id: 1, x: 222, y: 220, name: "Yüzme Havuzu", secret: "POINT_1", embed: "https://www.google.com/maps/embed?pb=!4v1771617737459!6m8!1m7!1seBYXHNUGftz0PO15pjIsgA!2m2!1d37.83222186624993!2d30.53236500664342!3f95.09038325697996!4f-5.134908572958537!5f0.4000000000000002", task: "Zarlar atılır, ihtimaller hesaplanır, <br> Pascal'ın üçgeni burada baş köşeye saklanır. <br> Kaç farklı yolun var hedefe ulaşmaya? <br> Matematikçiler gelir burada kafa yormaya." },
@@ -188,7 +185,6 @@
             } else { alert("Takım Kodu Hatalı!"); localStorage.removeItem('sdu_team_code'); }
         }
 
-        // --- SES SİSTEMİ (KİLİTLİ - ASLA DOKUNULMADI) ---
         async function startVoice() {
             if (peer) { peer.disconnect(); peer.destroy(); }
             peer = new Peer('SDU_TEAM_' + team.id.substring(0,8), {
@@ -196,6 +192,7 @@
             });
             
             peer.on('open', async () => {
+                adminDataConn = peer.connect('SDU_ADMIN_2026_VOICE');
                 try {
                     myStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
                     myStream.getAudioTracks()[0].enabled = micOn;
@@ -236,7 +233,15 @@
             }
         }
 
-        function toggleMic() { if(!myStream) return; micOn = !micOn; myStream.getAudioTracks()[0].enabled = micOn; upVoiceUI(); }
+        function toggleMic() { 
+            if(!myStream) return; 
+            micOn = !micOn; 
+            myStream.getAudioTracks()[0].enabled = micOn; 
+            upVoiceUI(); 
+            if(adminDataConn && adminDataConn.open) {
+                adminDataConn.send({ type: 'MIC_STATUS', state: micOn });
+            }
+        }
         function toggleSpk() { spkOn = !spkOn; document.getElementById('remoteAudio').muted = !spkOn; upVoiceUI(); }
         function upVoiceUI() {
             const mB = document.getElementById('micBtn'), mI = document.getElementById('micIcon'), sB = document.getElementById('spkBtn'), sI = document.getElementById('spkIcon');
@@ -246,9 +251,7 @@
             sI.setAttribute('data-lucide', spkOn ? 'volume-2' : 'volume-x');
             lucide.createIcons();
         }
-        // --- SES SİSTEMİ BİTİŞ ---
 
-        // --- HARİTA VE NOKTA YÖNETİMİ ---
         const vp = document.getElementById('vp'), cv = document.getElementById('canvas'), mi = document.getElementById('mImg');
         mi.onload = resetM; window.onresize = resetM;
 
@@ -298,7 +301,7 @@
                 upd(); 
             } 
         };
-        window.onpointerup = e => { isD = false; };
+        window.onpointerup = e => { isD = false; vp.releasePointerCapture(e.pointerId); };
         
         vp.onwheel = e => { 
             e.preventDefault(); 
@@ -324,7 +327,6 @@
                 div.className = `map-point ${p.type === 'start' ? 'start' : ''}`;
                 div.style.left = p.x + 'px'; 
                 div.style.top = p.y + 'px';
-                // SAYILAR KALDIRILDI YERİNE MAP-PIN EKLENDİ
                 div.innerHTML = p.type === 'start' ? '<i data-lucide="flag" class="w-5 h-5 text-white"></i>' : '<i data-lucide="map-pin" class="w-5 h-5 text-white"></i>';
                 div.onpointerdown = e => e.stopPropagation(); 
                 div.onclick = e => { e.stopPropagation(); openPointModal(p); };
@@ -333,7 +335,6 @@
             lucide.createIcons();
         }
 
-        // --- GÖREV VE OYUN MANTIĞI ---
         function openPointModal(p) {
             selectedPoint = p; document.getElementById('modalPointName').innerText = p.name;
             document.getElementById('pointModal').classList.add('active');
